@@ -37,13 +37,14 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // --- Caractéristiques V6 ---
-    const BASE_GAME_SPEED = 1.5; // Vitesse de base lente
-    const GAME_ACCELERATION = 0.00025; // Accélération lente
-    const OBSTACLE_BASE_WIDTH = 40; // Cactus fins
+    // --- MODIFICATIONS V2.4 ---
+    const BASE_GAME_SPEED = 2.0; // Vitesse de base augmentée (était 1.5)
+    const GAME_ACCELERATION = 0.0004; // Accélération augmentée (était 0.00025)
+    const OBSTACLE_BASE_WIDTH = 40; // Cactus fins (comme V6)
+    
+    const BASE_OBSTACLE_SPAWN_INTERVAL = 120; // Écart augmenté (était 100)
     // -------------------------
 
-    const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
 
     // Variables d'état du jeu
@@ -182,7 +183,6 @@ window.addEventListener('load', function() {
                 this.jumpCount = 0;
             }
 
-            // Paillettes (Logique V6)
             if (frameCount % 3 === 0) { 
                 particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
             }
@@ -367,14 +367,17 @@ window.addEventListener('load', function() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
             
-            // --- Caractéristiques V6 ---
-            this.scale = 1/3; // Taille 1/3
+            // --- MODIFICATION V2.4 ---
+            this.scale = 1/6; // Taille divisée par 2 (était 1/3)
             // -------------------------
 
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
             this.speed = gameSpeed * (this.scale * 0.5); 
-            this.alpha = 0.5; // Semi-transparent
+            
+            // --- MODIFICATION V2.4 ---
+            this.alpha = 0.6; // Légèrement plus visible pour compenser la petite taille
+            // -------------------------
             
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
@@ -398,13 +401,11 @@ window.addEventListener('load', function() {
         }
 
         draw() {
-            // --- Caractéristiques V6 ---
             ctx.globalAlpha = this.alpha;
             if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             }
             ctx.globalAlpha = 1.0;
-            // -------------------------
         }
     }
 
@@ -579,7 +580,7 @@ window.addEventListener('load', function() {
                 for(let i=0; i<10; i++) {
                     particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'standard'));
                 }
-                collectibles.splice(index, 1);
+                collectibles.splice(i, 1);
             }
             
             if (collectible.x < -collectible.width) {
@@ -712,7 +713,7 @@ window.addEventListener('load', function() {
 
         scoreElement.innerText = `Score: ${score}`;
         
-        // --- Vitesse V6 ---
+        // --- Vitesse V2.4 ---
         gameSpeed += GAME_ACCELERATION;
     }
 
@@ -741,7 +742,7 @@ window.addEventListener('load', function() {
     adminButton.addEventListener('click', (e) => {
         const password = prompt("Mot de passe Admin :");
         if (password === "corentin") {
-            // Recréer les fichiers admin si nécessaire
+            // Vous aurez besoin des fichiers admin.html et admin.js de la V1
             window.open('admin.html', '_blank');
         } else if (password) {
             alert("Mauvais mot de passe.");
