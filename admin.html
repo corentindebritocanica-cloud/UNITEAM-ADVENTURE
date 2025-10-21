@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Vérification des Assets</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #222; color: #fff; padding: 20px; }
+        h1 { text-align: center; border-bottom: 2px solid #fff; padding-bottom: 10px; }
+        #asset-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .asset-item {
+            background-color: #444;
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .asset-item img {
+            max-width: 150px;
+            max-height: 150px;
+            display: block;
+            margin: 0 auto 10px auto;
+            background-color: #fff; /* Fond blanc pour voir la transparence */
+        }
+        .asset-item p {
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .asset-item.audio {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vérification des Ressources (GDD V2.1)</h1>
+    <div id="asset-container">
+        </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
