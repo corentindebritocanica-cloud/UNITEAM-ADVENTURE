@@ -35,16 +35,16 @@ window.addEventListener('load', function() {
     const MAX_JUMPS = 2;
     const GROUND_HEIGHT = 70;
     const BASE_GAME_SPEED = 5;
-    const POWERUP_SCORE_INTERVAL = 20; // Points à marquer avant qu'un nouveau power-up puisse spawner
-    const POWERUP_DURATION_MS = 5000; // 5 secondes
+    const POWERUP_SCORE_INTERVAL = 20; 
+    const POWERUP_DURATION_MS = 5000; 
     
     // Constantes des obstacles
     const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
-    const OBSTACLE_BASE_WIDTH = 60; // *** CORRECTION 2 : Largeur de base fixe pour les cactus ***
+    const OBSTACLE_BASE_WIDTH = 60; 
 
     // Variables d'état du jeu
-    let gameState = 'loading'; // 'loading', 'menu', 'playing', 'gameOver'
+    let gameState = 'loading'; 
     let player;
     let obstacles = [];
     let collectibles = [];
@@ -104,12 +104,21 @@ window.addEventListener('load', function() {
             if (src.endsWith('.png') || src.endsWith('.jpg')) {
                 assets[key] = new Image();
                 assets[key].onload = assetLoaded;
+                
+                // ******** NOUVEAU BLOC D'ERREUR ********
+                // Si l'image ne se charge pas, on déclenche une alerte
+                assets[key].onerror = function() {
+                    assetFailedToLoad(key, src);
+                };
+                // ***************************************
+
             } else if (src.endsWith('.mp3')) {
                 assets[key] = new Audio();
                 if (key.startsWith('music')) {
                     musicTracks.push(assets[key]);
                 }
                 assets[key].src = src; 
+                // Pour l'audio, on suppose qu'il se charge (le navigateur est paresseux)
                 assetLoaded(); 
             }
             if (assets[key]) {
@@ -126,6 +135,17 @@ window.addEventListener('load', function() {
             initMenu();
         }
     }
+
+    // ******** NOUVELLE FONCTION D'ERREUR ********
+    function assetFailedToLoad(key, src) {
+        console.error(`Échec du chargement de l'asset: ${key} (${src})`);
+        loadingTextElement.innerText = `ERREUR DE CHARGEMENT`;
+        // Affiche une alerte claire à l'utilisateur
+        alert(`ERREUR : Impossible de charger le fichier "${src}". \n\nVérifiez que le fichier existe bien dans le dossier et que le nom est correct (attention aux majuscules/minuscules et à l'extension .png/.jpg).`);
+        // Arrête le jeu
+        throw new Error("Échec du chargement de l'asset. Vérifiez le nom du fichier.");
+    }
+    // ********************************************
 
     // --- CLASSES DU JEU ---
 
@@ -192,14 +212,9 @@ window.addEventListener('load', function() {
             const cactusIndex = Math.floor(Math.random() * 4) + 1;
             this.image = assets[`cactus${cactusIndex}`];
             
-            // ******** CORRECTION 2 *********
-            // Calculer la taille en gardant les proportions,
-            // basé sur une largeur fixe (OBSTACLE_BASE_WIDTH)
             const aspectRatio = this.image.height / this.image.width;
-            // Ajoute une légère variation de taille
-            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10); // ex: 50 à 70px
+            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10); 
             this.height = this.width * aspectRatio;
-            // ********************************
 
             this.x = CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
@@ -658,4 +673,70 @@ window.addEventListener('load', function() {
 
     function checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
-               rect1.x + rect
+               rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height &&
+               rect1.y + rect1.height > rect2.y;
+    }
+
+    // --- BOUCLE DE JEU PRINCIPALE (GDD 11) ---
+    function updateGame() {
+        if (gameState !== 'playing') return;
+
+        requestAnimationFrame(updateGame);
+        frameCount++;
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        handleBackground();
+        handleWeather();
+        
+        player.update();
+        player.draw();
+
+        handleSpawners();
+        handleEntities();
+        handlePowerUps();
+
+        scoreElement.innerText = `Score: ${score}`;
+        gameSpeed += 0.001;
+    }
+
+    // --- GESTION DES CONTRÔLES (GDD 5) ---
+    function handleInput(event) {
+        event.preventDefault(); 
+
+        switch (gameState) {
+            case 'menu':
+                startGame();
+                break;
+            case 'playing':
+                player.jump();
+                break;
+            case 'gameOver':
+                initMenu();
+                break;
+        }
+    }
+
+    // Écouteurs d'événements
+    gameContainer.addEventListener('mousedown', handleInput);
+    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
+
+    // Bouton Admin (GDD 15)
+    adminButton.addEventListener('click', (e) => {
+        const password = prompt("Mot de passe Admin :");
+        if (password === "corentin") {
+            window.open('admin.html', '_blank');
+        } else if (password) {
+            alert("Mauvais mot de passe.");
+        }
+    });
+
+    function stopEventPropagation(e) {
+        e.stopPropagation();
+    }
+    adminButton.addEventListener('mousedown', stopEventPropagation);
+    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
+
+    // Démarrer le chargement
+    loadAssets();
+});
