@@ -1,43 +1,57 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>UNITEAM ADVENTURE</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+  />
+  <title>UNITEAM ADVENTURE</title>
+
+  <!-- Chemin RELATIF -->
+  <link rel="stylesheet" href="./style.css" />
+
+  <!-- (Optionnel mais recommandé) préchargement des images du menu -->
+  <link rel="preload" as="image" href="./uniteamadventure.png" />
+  <link rel="preload" as="image" href="./chapeau.png" />
+  <link rel="preload" as="image" href="./botte.png" />
+  <link rel="preload" as="image" href="./aimant.png" />
 </head>
 <body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="lives-container"></div>
+    <div id="version">V3.2</div>
+    <div id="powerUpText"></div>
+    <div id="powerUpTimer"></div>
 
-        <div id="score">Score: 0</div>
-        <div id="lives-container"></div>
-        <div id="version">V3.2</div>
-        <div id="powerUpText"></div>
-        <div id="powerUpTimer"></div>
+    <div id="loadingText" class="screen">Chargement...</div>
 
-        <div id="loadingText" class="screen">Chargement...</div>
+    <!-- L’overlay menu est caché au départ ; le JS l’affichera après preload -->
+    <div id="menu" class="screen" style="display: none;">
+      <img src="./uniteamadventure.png" alt="Logo UNITEAM ADVENTURE" id="logo" />
+      <h1>Appuyez pour commencer</h1>
 
-        <div id="menu" class="screen" style="display: none;">
-            <img src="uniteamadventure.png" alt="Logo UNITEAM ADVENTURE" id="logo">
-            <h1>Appuyez pour commencer</h1>
-            <div id="powerup-info">
-                <h3>Power-Ups:</h3>
-                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
-                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
-                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
-            </div>
-            <button id="adminButton">Admin</button>
-        </div>
+      <div id="powerup-info">
+        <h3>Power-Ups :</h3>
+        <p><img src="./chapeau.png" alt="Chapeau" /> = Invincible</p>
+        <p><img src="./botte.png" alt="Botte" /> = Super Saut</p>
+        <p><img src="./aimant.png" alt="Aimant" /> = Aimant à notes</p>
+      </div>
 
-        <div id="gameOverScreen" class="screen" style="display: none;">
-            <h1>Game Over</h1>
-            <h2 id="finalScore">Score: 0</h2>
-            <p>Appuyez pour recommencer</p>
-        </div>
+      <button id="adminButton" type="button">Admin</button>
     </div>
 
-    <script src="game.js"></script>
+    <div id="gameOverScreen" class="screen" style="display: none;">
+      <h1>Game Over</h1>
+      <h2 id="finalScore">Score: 0</h2>
+      <p>Appuyez pour recommencer</p>
+    </div>
+  </div>
+
+  <!-- Chemin RELATIF + defer + cache-busting -->
+  <script src="./game.js?v=3.2.2" defer></script>
 </body>
 </html>
