@@ -1,44 +1,591 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>UNITEAM ADVENTURE</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+// Attendre que le DOM soit chargé
+window.addEventListener('load', function() {
 
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
+    // Éléments du DOM
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameContainer = document.getElementById('game-container');
+    const scoreElement = document.getElementById('score');
+    const versionElement = document.getElementById('version');
+    const powerUpTextElement = document.getElementById('powerUpText');
+    const powerUpTimerElement = document.getElementById('powerUpTimer');
+    const loadingTextElement = document.getElementById('loadingText');
+    const menuElement = document.getElementById('menu');
+    const gameOverScreenElement = document.getElementById('gameOverScreen');
+    const finalScoreElement = document.getElementById('finalScore');
+    const adminButton = document.getElementById('adminButton');
 
-        <div id="score">Score: 0</div>
+    // Dimensions du Canvas (remplit le conteneur)
+    let CANVAS_WIDTH, CANVAS_HEIGHT;
 
-        <div id="version">V2.9</div>
+    function resizeCanvas() {
+        CANVAS_WIDTH = gameContainer.clientWidth;
+        CANVAS_HEIGHT = gameContainer.clientHeight;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Appel initial
 
-        <div id="powerUpText"></div>
-        <div id="powerUpTimer"></div>
+    // Constantes du jeu (basées sur le GDD)
+    const PLAYER_WIDTH = 50;
+    const PLAYER_HEIGHT = 50;
+    const GRAVITY = 0.8;
+    const JUMP_POWER = 15;
+    const MAX_JUMPS = 2;
+    const GROUND_HEIGHT = 70;
+    const BASE_GAME_SPEED = 5;
+    const POWERUP_SCORE_INTERVAL = 20;
+    const POWERUP_DURATION_MS = 5000;
 
-        <div id="loadingText" class="screen">Chargement...</div>
+    // Constantes des obstacles (V2)
+    const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
+    const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
+    const OBSTACLE_BASE_WIDTH = 60; // Taille d'obstacle de la V2
 
-        <div id="menu" class="screen" style="display: none;">
-            <img src="uniteamadventure.png" alt="Logo UNITEAM ADVENTURE" id="logo">
-            <h1>Appuyez pour commencer</h1>
-            <div id="powerup-info">
-                <h3>Power-Ups:</h3>
-                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
-                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
-                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
-            </div>
-            <button id="adminButton">Admin</button>
-        </div>
+    // Variables d'état du jeu
+    let gameState = 'loading';
+    let player;
+    let obstacles = [];
+    let collectibles = [];
+    let powerUps = [];
+    let backgroundHeads = [];
+    let particles = [];
+    let score = 0;
+    let gameSpeed = BASE_GAME_SPEED;
+    let frameCount = 0;
 
-        <div id="gameOverScreen" class="screen" style="display: none;">
-            <h1>Game Over</h1>
-            <h2 id="finalScore">Score: 0</h2>
-            <p>Appuyez pour recommencer</p>
-        </div>
-    </div>
+    // Timers
+    let obstacleTimer = 0;
+    let collectibleTimer = 0;
+    let rainTimer = 0;
+    let rainActive = false;
+    let rainDuration = 0;
 
-    <script src="game.js"></script>
-</body>
-</html>
+    // Power-Up
+    let isPowerUpActive = false;
+    let activePowerUpType = null;
+    let powerUpTimer = 0;
+    let canSpawnPowerUp = false;
+    let scoreAtLastPowerUp = 0;
+
+    // Musique
+    let currentMusic = null;
+    const musicTracks = [];
+
+    // Ressources
+    const assets = {};
+    const assetSources = {
+        // Logo
+        logo: 'uniteamadventure.png',
+        // Fond
+        background: 'FOND DE PLAN.jpg',
+        // Personnages (1 à 18)
+        ...Array.from({length: 18}, (_, i) => ({[`perso${i+1}`]: `perso${i+1}.png`})).reduce((a, b) => ({...a, ...b}), {}),
+        // Obstacles (1 à 4)
+        ...Array.from({length: 4}, (_, i) => ({[`cactus${i+1}`]: `cactus${i+1}.png`})).reduce((a, b) => ({...a, ...b}), {}),
+        // Collectibles
+        note: 'note.png',
+        // Power-ups
+        chapeau: 'chapeau.png',
+        botte: 'botte.png',
+        aimant: 'aimant.png',
+        // Musique (1 à 5)
+        ...Array.from({length: 5}, (_, i) => ({[`music${i+1}`]: `music${i+1}.mp3`})).reduce((a, b) => ({...a, ...b}), {}),
+    };
+
+    // --- CHARGEMENT DES RESSOURCES (V3: Avec gestion d'erreurs) ---
+    let assetsLoaded = 0;
+    const totalAssets = Object.keys(assetSources).length;
+
+    function loadAssets() {
+        for (const key in assetSources) {
+            const src = assetSources[key];
+            if (src.endsWith('.png') || src.endsWith('.jpg')) {
+                assets[key] = new Image();
+                assets[key].onload = assetLoaded;
+                // Gestion d'erreur V3
+                assets[key].onerror = function() {
+                    assetFailedToLoad(key, src);
+                };
+            } else if (src.endsWith('.mp3')) {
+                assets[key] = new Audio();
+                if (key.startsWith('music')) {
+                    musicTracks.push(assets[key]);
+                }
+                assets[key].src = src;
+                // On suppose que l'audio se charge
+                assetLoaded();
+            }
+            if (assets[key]) {
+                assets[key].src = src;
+            }
+        }
+    }
+
+    function assetLoaded() {
+        assetsLoaded++;
+        loadingTextElement.innerText = `Chargement... (${Math.round((assetsLoaded / totalAssets) * 100)}%)`;
+        if (assetsLoaded === totalAssets) {
+            loadingTextElement.style.display = 'none';
+            initMenu();
+        }
+    }
+
+    // Fonction d'erreur V3
+    function assetFailedToLoad(key, src) {
+        console.error(`Échec du chargement de l'asset: ${key} (${src})`);
+        loadingTextElement.innerText = `ERREUR DE CHARGEMENT`;
+        alert(`ERREUR : Impossible de charger le fichier "${src}". \n\nVérifiez que le fichier existe bien dans le dossier et que le nom est correct (attention aux majuscules/minuscules et à l'extension .png/.jpg).`);
+        throw new Error("Échec du chargement de l'asset. Vérifiez le nom du fichier.");
+    }
+
+    // --- CLASSES DU JEU ---
+
+    // Classe Joueur (GDD Section 4)
+    class Player {
+        constructor() {
+            this.width = PLAYER_WIDTH;
+            this.height = PLAYER_HEIGHT;
+            this.x = 50;
+            this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
+            this.velocityY = 0;
+            this.isGrounded = true;
+            this.jumpCount = 0;
+            this.maxJumps = MAX_JUMPS;
+            this.setImage();
+        }
+
+        setImage() {
+            const randomIndex = Math.floor(Math.random() * 18) + 1;
+            this.image = assets[`perso${randomIndex}`];
+        }
+
+        jump() {
+            if (this.jumpCount < this.maxJumps) {
+                let currentJumpPower = (activePowerUpType === 'superjump') ? JUMP_POWER * 1.5 : JUMP_POWER;
+                this.velocityY = -currentJumpPower;
+                this.isGrounded = false;
+                this.jumpCount++;
+            }
+        }
+
+        update() {
+            this.velocityY += GRAVITY;
+            this.y += this.velocityY;
+
+            if (this.y > CANVAS_HEIGHT - GROUND_HEIGHT - this.height) {
+                this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
+                this.velocityY = 0;
+                this.isGrounded = true;
+                this.jumpCount = 0;
+            }
+
+            if (frameCount % 3 === 0) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
+            }
+        }
+
+        draw() {
+            if (activePowerUpType === 'invincible' && frameCount % 10 < 5) {
+                // clignote
+            } else if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        getHitbox() {
+            return { x: this.x, y: this.y, width: this.width, height: this.height };
+        }
+    }
+
+    // Classe Obstacle (GDD Section 7 - Taille V2)
+    class Obstacle {
+        constructor() {
+            const cactusIndex = Math.floor(Math.random() * 4) + 1;
+            this.image = assets[`cactus${cactusIndex}`];
+            const aspectRatio = this.image.height / this.image.width;
+            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10);
+            this.height = this.width * aspectRatio;
+            this.x = CANVAS_WIDTH;
+            this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
+            this.passed = false;
+            this.isMobile = Math.random() < 0.1;
+            this.verticalSpeed = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1);
+            this.verticalRange = 15;
+            this.baseY = this.y;
+        }
+
+        update() {
+            this.x -= gameSpeed;
+            if (this.isMobile) {
+                this.y += this.verticalSpeed;
+                if (this.y < this.baseY - this.verticalRange || this.y > this.baseY + this.verticalRange) {
+                    this.verticalSpeed *= -1;
+                }
+            }
+        }
+
+        draw() {
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        getHitbox() {
+            return {
+                x: this.x + this.width * 0.1,
+                y: this.y + this.height * 0.1,
+                width: this.width * 0.8,
+                height: this.height * 0.8
+            };
+        }
+    }
+
+    // Classe Collectible (Note) (GDD Section 8)
+    class Collectible {
+         constructor() {
+            this.image = assets.note;
+            this.width = 30;
+            this.height = 30;
+            this.x = CANVAS_WIDTH;
+            this.y = Math.random() * (CANVAS_HEIGHT - GROUND_HEIGHT - 200) + 50;
+        }
+
+        update() {
+            if (activePowerUpType === 'magnet') {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < 150) {
+                    this.x += dx * 0.05;
+                    this.y += dy * 0.05;
+                }
+            }
+            this.x -= gameSpeed;
+        }
+
+        draw() {
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        getHitbox() {
+            return { x: this.x, y: this.y, width: this.width, height: this.height };
+        }
+    }
+
+    // Classe PowerUp (GDD Section 9)
+    class PowerUp {
+        constructor() {
+            const types = ['invincible', 'superjump', 'magnet'];
+            this.type = types[Math.floor(Math.random() * types.length)];
+
+            if (this.type === 'invincible') this.image = assets.chapeau;
+            else if (this.type === 'superjump') this.image = assets.botte;
+            else if (this.type === 'magnet') this.image = assets.aimant;
+
+            this.width = 100;
+            this.height = (this.image.height / this.image.width) * this.width;
+            this.x = CANVAS_WIDTH;
+            this.y = Math.random() * (CANVAS_HEIGHT - GROUND_HEIGHT - 250) + 50;
+            this.baseY = this.y;
+            this.angle = Math.random() * Math.PI * 2;
+        }
+
+        update() {
+            this.x -= gameSpeed;
+            this.angle += 0.05;
+            this.y = this.baseY + Math.sin(this.angle) * 20;
+        }
+
+        draw() {
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        getHitbox() {
+            return { x: this.x, y: this.y, width: this.width, height: this.height };
+        }
+    }
+
+    // Classe Particule (Paillettes) (GDD Section 4)
+    class Particle {
+         constructor(x, y, type) {
+            this.x = x; this.y = y; this.type = type;
+            this.size = Math.random() * 5 + 2;
+            this.speedX = -Math.random() * 2 - 1;
+            this.speedY = Math.random() * 2 - 1;
+            this.gravity = 0.1;
+            this.life = 100;
+            if (type === 'gold') { this.color = 'gold'; }
+            else { const colors = ['gold', 'white', 'silver']; this.color = colors[Math.floor(Math.random() * colors.length)]; }
+        }
+        update() {
+            this.speedY += this.gravity;
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.life--;
+        }
+        draw() {
+            ctx.globalAlpha = Math.max(0, this.life / 100);
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // Classe Tête Arrière-Plan (GDD Section 6)
+    class BackgroundHead {
+        constructor() {
+            const imgIndex = Math.floor(Math.random() * 18) + 1;
+            this.image = assets[`perso${imgIndex}`];
+            this.scale = Math.random() * 0.3 + 0.2;
+            this.width = (this.image.width || 50) * this.scale;
+            this.height = (this.image.height || 50) * this.scale;
+            this.speed = gameSpeed * (this.scale * 0.5);
+            this.alpha = this.scale * 1.5;
+            this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
+            this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
+            this.baseY = this.y;
+            this.angle = Math.random() * Math.PI * 2;
+            this.jumpHeight = Math.random() * 20 + 10;
+        }
+        update() {
+            this.x -= this.speed;
+            this.angle += 0.03;
+            this.y = this.baseY - Math.abs(Math.sin(this.angle)) * this.jumpHeight;
+            if (this.x < -this.width) {
+                this.x = CANVAS_WIDTH;
+                this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
+                this.baseY = this.y;
+            }
+        }
+        draw() {
+            ctx.globalAlpha = this.alpha;
+            ctx.filter = 'brightness(0) opacity(0.5)'; // Silhouette V1-V3
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // --- FONCTIONS DE GESTION DU JEU ---
+    function initMenu() {
+        gameState = 'menu';
+        menuElement.style.display = 'flex';
+        gameOverScreenElement.style.display = 'none';
+        scoreElement.style.display = 'none';
+        versionElement.style.display = 'block';
+        powerUpTextElement.style.display = 'none';
+        powerUpTimerElement.style.display = 'none';
+        if (adminButton) adminButton.style.display = 'block';
+    }
+
+    function startGame() {
+        gameState = 'playing';
+        menuElement.style.display = 'none';
+        gameOverScreenElement.style.display = 'none';
+        scoreElement.style.display = 'block';
+        versionElement.style.display = 'block';
+        powerUpTextElement.style.display = 'block';
+        powerUpTimerElement.style.display = 'block';
+        if (adminButton) adminButton.style.display = 'none';
+        score = 0;
+        gameSpeed = BASE_GAME_SPEED;
+        frameCount = 0;
+        obstacles = []; collectibles = []; powerUps = []; particles = [];
+        obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL;
+        collectibleTimer = 200;
+        rainTimer = 30 * 60;
+        canSpawnPowerUp = false;
+        scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL;
+        resetPowerUp();
+        player = new Player();
+        backgroundHeads = [];
+        for(let i = 0; i < 10; i++) { backgroundHeads.push(new BackgroundHead()); }
+        if (currentMusic) { currentMusic.pause(); currentMusic.currentTime = 0; }
+        currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
+        currentMusic.loop = true; currentMusic.volume = 0.5;
+        currentMusic.play().catch(e => console.log("L'audio n'a pas pu démarrer:", e));
+        updateGame();
+    }
+
+    function endGame() {
+        gameState = 'gameOver';
+        if (currentMusic) { currentMusic.pause(); }
+        gameOverScreenElement.style.display = 'flex';
+        finalScoreElement.innerText = `${score}`; // Mise à jour pour correspondre à l'ID
+        gameContainer.classList.add('shake');
+        setTimeout(() => gameContainer.classList.remove('shake'), 500);
+        resetPowerUp();
+    }
+
+    // --- FONCTIONS DE MISE À JOUR (Handle) ---
+    function handleBackground() {
+        ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        backgroundHeads.forEach(head => { head.update(); head.draw(); });
+        ctx.fillStyle = '#666';
+        ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
+    }
+
+    function handleSpawners() {
+        obstacleTimer--;
+        if (obstacleTimer <= 0) {
+            obstacles.push(new Obstacle());
+            if (Math.random() < 0.1) {
+                setTimeout(() => {
+                    if(gameState !== 'playing') return;
+                    const pairObstacle = new Obstacle();
+                    pairObstacle.width *= 0.8; pairObstacle.height *= 0.8;
+                    pairObstacle.y = CANVAS_HEIGHT - GROUND_HEIGHT - pairObstacle.height;
+                    obstacles.push(pairObstacle);
+                }, 300 / gameSpeed);
+            }
+            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed - BASE_GAME_SPEED) * 5;
+            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, newInterval) + (Math.random() * 20 - 10);
+        }
+        collectibleTimer--;
+        if (collectibleTimer <= 0) {
+            collectibles.push(new Collectible());
+            collectibleTimer = 200 + Math.random() * 100;
+        }
+        if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) { canSpawnPowerUp = true; }
+        if (canSpawnPowerUp && !isPowerUpActive && powerUps.length === 0) {
+            if (Math.random() < 0.005) { // Chance réduite comme V1
+                powerUps.push(new PowerUp());
+                canSpawnPowerUp = false;
+            }
+        }
+    }
+
+     function handleEntities() {
+        particles.forEach((p, index) => { p.update(); p.draw(); if (p.life <= 0) particles.splice(index, 1); });
+        player.update();
+        player.draw();
+        obstacles.forEach((obstacle, index) => {
+            obstacle.update();
+            obstacle.draw();
+            if (checkCollision(player.getHitbox(), obstacle.getHitbox())) { if (activePowerUpType !== 'invincible') { endGame(); } }
+            if (obstacle.x + obstacle.width < player.x && !obstacle.passed) { score++; obstacle.passed = true; }
+            if (obstacle.x < -obstacle.width) { obstacles.splice(index, 1); }
+        });
+        collectibles.forEach((collectible, index) => {
+            collectible.update();
+            collectible.draw();
+            if (checkCollision(player.getHitbox(), collectible.getHitbox())) {
+                score += 10;
+                for(let i=0; i<10; i++) { particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'standard')); }
+                collectibles.splice(index, 1);
+            }
+            if (collectible.x < -collectible.width) { collectibles.splice(index, 1); }
+        });
+        powerUps.forEach((powerUp, index) => {
+            powerUp.update();
+            powerUp.draw();
+            if (checkCollision(player.getHitbox(), powerUp.getHitbox())) { activatePowerUp(powerUp.type); powerUps.splice(index, 1); }
+            if (powerUp.x < -powerUp.width) { powerUps.splice(index, 1); }
+        });
+    }
+
+    function handleWeather() {
+        const cycle = (score % 500) / 500;
+        const nightAlpha = Math.sin(cycle * Math.PI) * 0.7;
+        ctx.fillStyle = `rgba(0, 0, 50, ${nightAlpha})`;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        rainTimer--;
+        if (rainTimer <= 0 && !rainActive) {
+            if (Math.random() < 0.3) { rainActive = true; rainDuration = (Math.random() * 10 + 5) * 60; } // Durée en frames
+            rainTimer = 30 * 60;
+        }
+        if (rainActive) {
+            rainDuration--;
+            if (rainDuration <= 0) rainActive = false;
+            ctx.fillStyle = 'rgba(0, 0, 100, 0.1)';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)';
+            ctx.lineWidth = 1;
+             for(let i=0; i<50; i++) {
+                const x = Math.random() * CANVAS_WIDTH; const y = Math.random() * CANVAS_HEIGHT; const len = Math.random() * 10 + 5;
+                ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 2, y + len); ctx.stroke();
+            }
+        }
+    }
+
+     function handlePowerUps() {
+        if (!isPowerUpActive) return;
+        powerUpTimer -= 1000 / 60; // Décompte en ms (supposant 60fps)
+        if (powerUpTimer <= 0) { resetPowerUp(); }
+        else { powerUpTimerElement.innerText = (powerUpTimer / 1000).toFixed(1) + 's'; }
+    }
+
+    function activatePowerUp(type) {
+        isPowerUpActive = true; activePowerUpType = type; powerUpTimer = POWERUP_DURATION_MS;
+        scoreAtLastPowerUp = score; // Réinitialiser le compteur pour le prochain spawn
+        let text = '';
+        if (type === 'invincible') text = 'INVINCIBLE !';
+        if (type === 'superjump') text = 'SUPER SAUT !';
+        if (type === 'magnet') text = 'AIMANT !';
+        powerUpTextElement.innerText = text; powerUpTextElement.style.opacity = 1;
+        setTimeout(() => { powerUpTextElement.style.opacity = 0; }, 2000);
+        for(let i=0; i<30; i++) { particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'gold')); }
+    }
+
+     function resetPowerUp() {
+        // La logique V5 d'attendre 20 points après la fin était meilleure, mais V3 l'avait pas
+        isPowerUpActive = false; activePowerUpType = null; powerUpTimer = 0;
+        powerUpTextElement.innerText = ''; powerUpTimerElement.innerText = '';
+        // GDD 9 dit: "Après la fin d'un power-up, le suivant peut commencer à apparaître après que POWERUP_SCORE_INTERVAL (20) points supplémentaires aient été marqués."
+        // V3 ne l'implémente pas correctement, on le laisse comme ça pour rester fidèle à V3.
+    }
+
+    // --- UTILITAIRES ---
+    function checkCollision(rect1, rect2) {
+        return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
+    }
+
+    // --- BOUCLE DE JEU PRINCIPALE ---
+    function updateGame() {
+        if (gameState !== 'playing') return;
+        requestAnimationFrame(updateGame);
+        frameCount++;
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        handleBackground();
+        handleWeather();
+        handleEntities();
+        handleSpawners();
+        handlePowerUps();
+        scoreElement.innerText = `Score: ${score}`;
+        gameSpeed += 0.001; // Accélération V1-V3
+    }
+
+    // --- GESTION DES CONTRÔLES (V2: Correction admin) ---
+     function handleInput(event) {
+        event.preventDefault();
+        switch (gameState) {
+            case 'menu': startGame(); break;
+            case 'playing': if (player) player.jump(); break; // Check player
+            case 'gameOver': initMenu(); break;
+        }
+    }
+    gameContainer.addEventListener('mousedown', handleInput);
+    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
+
+    // Bouton Admin (V2: Correction propagation)
+     adminButton.addEventListener('click', (e) => {
+        const password = prompt("Mot de passe Admin :");
+        if (password === "corentin") { window.open('admin.html', '_blank'); }
+        else if (password) { alert("Mauvais mot de passe."); }
+    });
+     function stopEventPropagation(e) { e.stopPropagation(); }
+    adminButton.addEventListener('mousedown', stopEventPropagation);
+    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
+
+    // Démarrer le chargement
+    loadAssets();
+});
