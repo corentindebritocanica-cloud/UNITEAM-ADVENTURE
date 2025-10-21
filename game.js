@@ -37,14 +37,13 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // --- MODIFICATIONS V2.4 ---
-    const BASE_GAME_SPEED = 2.0; // Vitesse de base augmentée (était 1.5)
-    const GAME_ACCELERATION = 0.0004; // Accélération augmentée (était 0.00025)
-    const OBSTACLE_BASE_WIDTH = 40; // Cactus fins (comme V6)
-    
-    const BASE_OBSTACLE_SPAWN_INTERVAL = 120; // Écart augmenté (était 100)
+    // --- MODIFICATIONS V2.5 ---
+    const BASE_GAME_SPEED = 3.0; // Vitesse de base x1.5 (était 2.0)
+    const GAME_ACCELERATION = 0.0006; // Accélération x1.5 (était 0.0004)
     // -------------------------
 
+    const OBSTACLE_BASE_WIDTH = 40; // Cactus fins
+    const BASE_OBSTACLE_SPAWN_INTERVAL = 120; // Écart V2.4
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
 
     // Variables d'état du jeu
@@ -367,17 +366,16 @@ window.addEventListener('load', function() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
             
-            // --- MODIFICATION V2.4 ---
-            this.scale = 1/6; // Taille divisée par 2 (était 1/3)
-            // -------------------------
+            // Taille V2.4 (1/6)
+            this.scale = 1/6; 
 
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
-            this.speed = gameSpeed * (this.scale * 0.5); 
+            // Vitesse adaptée à la nouvelle taille
+            this.speed = BASE_GAME_SPEED * (this.scale * 0.5); // Utilise BASE_GAME_SPEED pour que la vitesse de fond n'accélère pas trop
             
-            // --- MODIFICATION V2.4 ---
-            this.alpha = 0.6; // Légèrement plus visible pour compenser la petite taille
-            // -------------------------
+            // Opacité V2.4
+            this.alpha = 0.6; 
             
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
@@ -388,6 +386,8 @@ window.addEventListener('load', function() {
         }
 
         update() {
+            // Ajuster la vitesse de défilement en fonction de la vitesse actuelle du jeu
+            this.speed = gameSpeed * (this.scale * 0.5); 
             this.x -= this.speed;
             
             this.angle += 0.03;
@@ -495,7 +495,7 @@ window.addEventListener('load', function() {
         ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         backgroundHeads.forEach(head => {
-            head.update();
+            head.update(); // Mettre à jour la vitesse ici
             head.draw();
         });
 
@@ -518,7 +518,8 @@ window.addEventListener('load', function() {
                 }, 300 / gameSpeed); 
             }
 
-            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed - BASE_GAME_SPEED) * 5;
+            // L'intervalle de spawn s'adapte à la vitesse
+            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed - BASE_GAME_SPEED) * 5; 
             obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, newInterval);
             obstacleTimer += Math.random() * 20 - 10; 
         }
@@ -584,7 +585,7 @@ window.addEventListener('load', function() {
             }
             
             if (collectible.x < -collectible.width) {
-                collectibles.splice(index, 1);
+                collectibles.splice(i, 1);
             }
         });
 
@@ -742,7 +743,6 @@ window.addEventListener('load', function() {
     adminButton.addEventListener('click', (e) => {
         const password = prompt("Mot de passe Admin :");
         if (password === "corentin") {
-            // Vous aurez besoin des fichiers admin.html et admin.js de la V1
             window.open('admin.html', '_blank');
         } else if (password) {
             alert("Mauvais mot de passe.");
