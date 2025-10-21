@@ -2,39 +2,53 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>UNITEAM ADVENTURE</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="game-container">
+    <div class="game-container">
+        <div id="version">V1.7</div> 
+
+        <div id="score">Score: 0</div>
+        
         <canvas id="gameCanvas"></canvas>
         
-        <div id="score">Score: 0</div>
-        <div id="version">V2.1</div>
-        <div id="powerUpText"></div>
-        <div id="powerUpTimer"></div>
+        <div id="startScreen">
+             <img src="uniteamadventure.png" alt="UNITEAM ADVENTURE" id="gameLogo">
+             <p id="loadingText">Chargement...</p>
 
-        <div id="loadingText" class="screen">Chargement...</div>
+             <div id="powerUpExplanation">
+                 <h3>Bonus :</h3>
+                 <div class="power-up-item">
+                     <img src="chapeau.png" alt="Chapeau" class="power-up-icon"> 
+                     <p class="power-up-desc">Invincible (5s)</p>
+                 </div>
+                 <div class="power-up-item">
+                     <img src="botte.png" alt="Botte" class="power-up-icon"> 
+                     <p class="power-up-desc">Super Saut (5s)</p>
+                 </div>
+                 <div class="power-up-item">
+                     <img src="aimant.png" alt="Aimant" class="power-up-icon"> 
+                     <p class="power-up-desc">Aimant à Notes (5s)</p>
+                 </div>
+             </div>
 
-        <div id="menu" class="screen" style="display: none;">
-            <img src="uniteamadventure.png" alt="Logo UNITEAM ADVENTURE" id="logo">
-            <h1>Appuyez pour commencer</h1>
-            <div id="powerup-info">
-                <h3>Power-Ups:</h3>
-                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
-                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
-                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
-            </div>
-            <button id="adminButton">Admin</button>
+             <button id="adminBtn">⚙️ Admin</button>
+         </div>
+
+        <div id="gameOverScreen">
+             <h1>Game Over</h1> 
+             <p>Score final: <span id="finalScore">0</span></p>
+             <p>Appuyez pour recommencer</p>
         </div>
 
-        <div id="gameOverScreen" class="screen" style="display: none;">
-            <h1>Game Over</h1>
-            <h2 id="finalScore">Score: 0</h2>
-            <p>Appuyez pour recommencer</p>
+        <div id="powerUpInfo">
+             <div id="powerUpText"></div>
+             <div id="powerUpTimer"></div>
         </div>
+
     </div>
 
     <script src="game.js"></script>
