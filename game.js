@@ -352,3 +352,425 @@ window.addEventListener('load', function() {
             this.speedY += this.gravity;
             this.x += this.speedX;
             this.y += this.speedY;
+            this.life--;
+        }
+
+        draw() {
+            ctx.globalAlpha = this.life / 100; 
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // Classe Tête Arrière-Plan (GDD Section 6)
+    class BackgroundHead {
+        constructor() {
+            const imgIndex = Math.floor(Math.random() * 18) + 1;
+            this.image = assets[`perso${imgIndex}`];
+            
+            // --- MODIFICATION V9 ---
+            // Taille divisée par deux (1/3 -> 1/6)
+            this.scale = 1/6; 
+            // -------------------------
+
+            this.width = (this.image.width || 50) * this.scale;
+            this.height = (this.image.height || 50) * this.scale;
+            this.speed = gameSpeed * (this.scale * 0.5); 
+            
+            // --- MODIFICATION V9 ---
+            // Opacité réduite (était 0.5)
+            this.alpha = 0.4; 
+            // -------------------------
+            
+            this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
+            this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
+            
+            this.baseY = this.y;
+            this.angle = Math.random() * Math.PI * 2;
+            this.jumpHeight = Math.random() * 20 + 10;
+        }
+
+        update() {
+            this.x -= this.speed;
+            
+            this.angle += 0.03;
+            this.y = this.baseY - Math.abs(Math.sin(this.angle)) * this.jumpHeight; // Sautillement
+            
+            if (this.x < -this.width) {
+                this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH / 2;
+                this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
+                this.baseY = this.y;
+                const randomIndex = Math.floor(Math.random() * 18) + 1;
+                this.image = assets[`perso${randomIndex}`];
+            }
+        }
+
+        draw() {
+            ctx.globalAlpha = this.alpha;
+            if (this.image && this.image.complete) {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // --- FONCTIONS DE GESTION DU JEU ---
+
+    // Initialisation du Menu (GDD 11)
+    function initMenu() {
+        gameState = 'menu';
+        menuElement.style.display = 'flex';
+        gameOverScreenElement.style.display = 'none';
+        
+        scoreElement.style.display = 'none';
+        versionElement.style.display = 'block'; 
+        powerUpTextElement.style.display = 'none';
+        powerUpTimerElement.style.display = 'none';
+        if (adminButton) adminButton.style.display = 'block';
+    }
+
+    // Démarrer la partie (GDD 11)
+    function startGame() {
+        gameState = 'playing';
+        menuElement.style.display = 'none';
+        gameOverScreenElement.style.display = 'none';
+        
+        scoreElement.style.display = 'block';
+        versionElement.style.display = 'block';
+        powerUpTextElement.style.display = 'block';
+        powerUpTimerElement.style.display = 'block';
+        if (adminButton) adminButton.style.display = 'none';
+
+        score = 0;
+        gameSpeed = BASE_GAME_SPEED;
+        frameCount = 0;
+        obstacles = [];
+        collectibles = [];
+        powerUps = [];
+        particles = [];
+        
+        obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL;
+        collectibleTimer = 200; 
+        rainTimer = 30 * 60; 
+
+        canSpawnPowerUp = false;
+        scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL; 
+        resetPowerUp();
+        lastPowerUpType = null; 
+        
+        player = new Player();
+        
+        backgroundHeads = [];
+        for(let i = 0; i < 10; i++) { 
+            backgroundHeads.push(new BackgroundHead());
+        }
+
+        if (currentMusic) {
+            currentMusic.pause();
+            currentMusic.currentTime = 0;
+        }
+        currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
+        currentMusic.loop = true;
+        currentMusic.volume = 0.5;
+        currentMusic.play().catch(e => console.log("L'audio n'a pas pu démarrer:", e));
+
+        updateGame();
+    }
+
+    // Fin de partie (GDD 11)
+    function endGame() {
+        gameState = 'gameOver';
+        
+        if (currentMusic) {
+            currentMusic.pause();
+        }
+
+        gameOverScreenElement.style.display = 'flex';
+        finalScoreElement.innerText = `Score: ${score}`;
+        
+        gameContainer.classList.add('shake');
+        setTimeout(() => gameContainer.classList.remove('shake'), 500);
+
+        resetPowerUp();
+    }
+
+    // --- FONCTIONS DE MISE À JOUR (Handle) ---
+
+    function handleBackground() {
+        // (Le fond est géré par le CSS)
+
+        backgroundHeads.forEach(head => {
+            head.update();
+            head.draw();
+        });
+
+        ctx.fillStyle = '#666';
+        ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
+    }
+
+    function handleSpawners() {
+        obstacleTimer--;
+        if (obstacleTimer <= 0) {
+            obstacles.push(new Obstacle());
+            
+            if (Math.random() < 0.1) {
+                setTimeout(() => {
+                    const pairObstacle = new Obstacle();
+                    pairObstacle.width *= 0.8;
+                    pairObstacle.height *= 0.8;
+                    pairObstacle.y = CANVAS_HEIGHT - GROUND_HEIGHT - pairObstacle.height;
+                    obstacles.push(pairObstacle);
+                }, 300 / gameSpeed); 
+            }
+            
+            const newInterval = Math.max(BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed * 5), MIN_OBSTACLE_SPAWN_INTERVAL);
+            obstacleTimer = newInterval + (Math.random() * 20 - 10); 
+        }
+
+        collectibleTimer--;
+        if (collectibleTimer <= 0) {
+            collectibles.push(new Collectible());
+            collectibleTimer = 200 + Math.random() * 100; 
+        }
+
+        // Logique de spawn des Power-Ups (basée sur V5)
+        if (!isPowerUpActive && powerUps.length === 0) { 
+            if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) {
+                canSpawnPowerUp = true;
+            }
+            // Augmentation de la chance de spawn pour s'adapter à la vitesse
+            if (canSpawnPowerUp && Math.random() < 0.01) { // 1% de chance par frame
+                powerUps.push(new PowerUp());
+                canSpawnPowerUp = false; 
+            }
+        }
+    }
+
+    function handleEntities() {
+        // Paillettes (dessinées en premier pour être "derrière" le joueur)
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.update();
+            p.draw();
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        // Joueur
+        player.update();
+        player.draw();
+
+        // Obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obstacle = obstacles[i];
+            obstacle.update();
+            obstacle.draw();
+
+            if (checkCollision(player.getHitbox(), obstacle.getHitbox())) {
+                if (activePowerUpType !== 'invincible') {
+                    endGame();
+                }
+            }
+
+            if (obstacle.x + obstacle.width < player.x && !obstacle.passed) {
+                score++;
+                obstacle.passed = true;
+            }
+
+            if (obstacle.x < -obstacle.width) {
+                obstacles.splice(i, 1);
+            }
+        }
+
+        // Collectibles
+        for (let i = collectibles.length - 1; i >= 0; i--) {
+            let collectible = collectibles[i];
+            collectible.update();
+            collectible.draw();
+
+            if (checkCollision(player.getHitbox(), collectible.getHitbox())) {
+                score += 10; 
+                for(let j=0; j<10; j++) {
+                    particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'standard'));
+                }
+                collectibles.splice(i, 1);
+            }
+            
+            if (collectible.x < -collectible.width) {
+                collectibles.splice(i, 1);
+            }
+        }
+
+        // Power-ups
+        for (let i = powerUps.length - 1; i >= 0; i--) {
+            let powerUp = powerUps[i];
+            powerUp.update();
+            powerUp.draw();
+            
+            if (checkCollision(player.getHitbox(), powerUp.getHitbox())) {
+                activatePowerUp(powerUp.type);
+                powerUps.splice(i, 1);
+            }
+
+            if (powerUp.x < -powerUp.width) {
+                powerUps.splice(i, 1);
+            }
+        }
+    }
+
+    function handleWeather() {
+        const cycle = (score % 500) / 500; 
+        const nightAlpha = Math.sin(cycle * Math.PI) * 0.7; 
+        ctx.fillStyle = `rgba(0, 0, 50, ${nightAlpha})`;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        rainTimer--;
+        if (rainTimer <= 0 && !rainActive) {
+            if (Math.random() < 0.3) {
+                rainActive = true;
+                rainDuration = Math.random() * 10 * 60 + 5 * 60; 
+            }
+            rainTimer = 30 * 60; 
+        }
+
+        if (rainActive) {
+            rainDuration--;
+            if (rainDuration <= 0) rainActive = false;
+
+            ctx.fillStyle = 'rgba(0, 0, 100, 0.1)';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<50; i++) { 
+                const x = Math.random() * CANVAS_WIDTH;
+                const y = Math.random() * CANVAS_HEIGHT;
+                const len = Math.random() * 10 + 5;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - 2, y + len); 
+                ctx.stroke();
+            }
+        }
+    }
+
+    function handlePowerUps() {
+        if (!isPowerUpActive) return;
+
+        powerUpTimer -= 1000 / 60; 
+        
+        if (powerUpTimer <= 0) {
+            resetPowerUp();
+        } else {
+            powerUpTimerElement.innerText = (powerUpTimer / 1000).toFixed(1) + 's';
+        }
+    }
+
+    function activatePowerUp(type) {
+        isPowerUpActive = true;
+        activePowerUpType = type;
+        powerUpTimer = POWERUP_DURATION_MS;
+        
+        lastPowerUpType = type; 
+        
+        let text = '';
+        if (type === 'invincible') text = 'INVINCIBLE !';
+        if (type === 'superjump') text = 'SUPER SAUT !';
+        if (type === 'magnet') text = 'AIMANT !';
+        
+        powerUpTextElement.innerText = text;
+        powerUpTextElement.style.opacity = 1;
+        
+        setTimeout(() => {
+            powerUpTextElement.style.opacity = 0;
+        }, 2000); 
+
+        for(let i=0; i<30; i++) {
+            particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'gold'));
+        }
+    }
+
+    function resetPowerUp() {
+        if (isPowerUpActive) {
+            scoreAtLastPowerUp = score; 
+        }
+
+        isPowerUpActive = false;
+        activePowerUpType = null;
+        powerUpTimer = 0;
+        powerUpTextElement.innerText = '';
+        powerUpTimerElement.innerText = '';
+    }
+
+// --- UTILITAIRES ---
+
+    function checkCollision(rect1, rect2) {
+        return rect1.x < rect2.x + rect2.width &&
+               rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height &&
+               rect1.y + rect1.height > rect2.y;
+    }
+
+    // --- BOUCLE DE JEU PRINCIPALE (GDD 11) ---
+    function updateGame() {
+        if (gameState !== 'playing') return;
+
+        requestAnimationFrame(updateGame);
+        frameCount++;
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        handleBackground();
+        handleWeather();
+        
+        // Ordre de dessin : Paillettes -> Joueur -> Obstacles...
+        handleEntities();
+        
+        handleSpawners();
+        handlePowerUps();
+
+        scoreElement.innerText = `Score: ${score}`;
+        
+        // --- Vitesse V8 ---
+        gameSpeed += GAME_ACCELERATION;
+    }
+
+    // --- GESTION DES CONTRÔLES (GDD 5) ---
+    function handleInput(event) {
+        event.preventDefault(); 
+
+        switch (gameState) {
+            case 'menu':
+                startGame();
+                break;
+            case 'playing':
+                player.jump();
+                break;
+            case 'gameOver':
+                initMenu();
+                break;
+        }
+    }
+
+    // Écouteurs d'événements
+    gameContainer.addEventListener('mousedown', handleInput);
+    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
+
+    // Bouton Admin (GDD 15)
+    adminButton.addEventListener('click', (e) => {
+        const password = prompt("Mot de passe Admin :");
+        if (password === "corentin") {
+            window.open('admin.html', '_blank');
+        } else if (password) {
+            alert("Mauvais mot de passe.");
+        }
+    });
+
+    function stopEventPropagation(e) {
+        e.stopPropagation();
+    }
+    adminButton.addEventListener('mousedown', stopEventPropagation);
+    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
+
+    // Démarrer le chargement
+    loadAssets();
+});
