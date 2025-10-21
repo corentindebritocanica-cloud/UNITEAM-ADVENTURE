@@ -37,11 +37,11 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // --- MODIFICATIONS V4 ---
-    const BASE_GAME_SPEED = 3; // Ralenti (était 5)
+    // --- MODIFICATIONS V6 ---
+    const BASE_GAME_SPEED = 1.5; // Vitesse de base divisée par 2 (était 3)
     const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
-    const OBSTACLE_BASE_WIDTH = 40; // Réduit (était 60)
+    const OBSTACLE_BASE_WIDTH = 40; 
     // -------------------------
 
     // Variables d'état du jeu
@@ -68,7 +68,8 @@ window.addEventListener('load', function() {
     let activePowerUpType = null;
     let powerUpTimer = 0;
     let canSpawnPowerUp = false;
-    let scoreAtLastPowerUp = 0;
+    let scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL;
+    let lastPowerUpType = null; 
 
     // Musique
     let currentMusic = null;
@@ -204,8 +205,7 @@ window.addEventListener('load', function() {
             this.image = assets[`cactus${cactusIndex}`];
             
             const aspectRatio = this.image.height / this.image.width;
-            // --- MODIFICATION V4 ---
-            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 10 - 5); // Variation plus faible
+            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 10 - 5); 
             this.height = this.width * aspectRatio;
 
             this.x = CANVAS_WIDTH;
@@ -253,16 +253,9 @@ window.addEventListener('load', function() {
             this.height = 30;
             this.x = CANVAS_WIDTH;
             
-            // --- MODIFICATION V4 ---
-            // Apparaît dans une plage de 150px de haut,
-            // commençant à 100px au-dessus du sol (250 - 150 = 100)
-            // et montant jusqu'à 250px au-dessus du sol.
-            // (CANVAS_HEIGHT - GROUND_HEIGHT) est le sol.
-            // (CANVAS_HEIGHT - GROUND_HEIGHT - 250) est le point de spawn max.
             const spawnRange = 150;
-            const maxSpawnHeight = 250; // 250px au-dessus du sol
+            const maxSpawnHeight = 250; 
             this.y = (CANVAS_HEIGHT - GROUND_HEIGHT - maxSpawnHeight) + (Math.random() * spawnRange);
-            // -------------------------
         }
 
         update() {
@@ -293,7 +286,9 @@ window.addEventListener('load', function() {
     class PowerUp {
         constructor() {
             const types = ['invincible', 'superjump', 'magnet'];
-            this.type = types[Math.floor(Math.random() * types.length)];
+            
+            const availableTypes = types.filter(t => t !== lastPowerUpType);
+            this.type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
             
             if (this.type === 'invincible') this.image = assets.chapeau;
             else if (this.type === 'superjump') this.image = assets.botte;
@@ -303,12 +298,9 @@ window.addEventListener('load', function() {
             this.height = (this.image.height / this.image.width) * this.width;
             this.x = CANVAS_WIDTH;
             
-            // --- MODIFICATION V4 ---
-            // Apparaît dans la même plage que les notes, mais légèrement plus haut
             const spawnRange = 150;
-            const maxSpawnHeight = 300; // 300px au-dessus du sol
+            const maxSpawnHeight = 300; 
             this.y = (CANVAS_HEIGHT - GROUND_HEIGHT - maxSpawnHeight) + (Math.random() * spawnRange);
-            // -------------------------
 
             this.baseY = this.y;
             this.angle = Math.random() * Math.PI * 2;
@@ -372,11 +364,14 @@ window.addEventListener('load', function() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
             
-            this.scale = Math.random() * 0.3 + 0.2; 
+            // --- MODIFICATIONS V6 ---
+            this.scale = 1/3; // Taille fixe 1/3 (était aléatoire 0.2-0.5)
+            // -------------------------
+
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
             this.speed = gameSpeed * (this.scale * 0.5); 
-            this.alpha = this.scale * 1.5; 
+            this.alpha = this.scale * 1.5; // L'alpha est semi-transparent (0.33 * 1.5 = 0.5)
             
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
@@ -400,13 +395,14 @@ window.addEventListener('load', function() {
         }
 
         draw() {
+            // --- MODIFICATIONS V6 ---
+            // Filtres (ombre/silhouette) supprimés
             ctx.globalAlpha = this.alpha;
-            ctx.filter = 'brightness(0) opacity(0.5)';
             if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             }
-            ctx.filter = 'none';
             ctx.globalAlpha = 1.0;
+            // -------------------------
         }
     }
 
@@ -450,6 +446,7 @@ window.addEventListener('load', function() {
         canSpawnPowerUp = false;
         scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL; 
         resetPowerUp();
+        lastPowerUpType = null; 
         
         player = new Player();
         
@@ -650,7 +647,8 @@ window.addEventListener('load', function() {
         isPowerUpActive = true;
         activePowerUpType = type;
         powerUpTimer = POWERUP_DURATION_MS;
-        scoreAtLastPowerUp = score; 
+        
+        lastPowerUpType = type; 
         
         let text = '';
         if (type === 'invincible') text = 'INVINCIBLE !';
@@ -670,6 +668,10 @@ window.addEventListener('load', function() {
     }
 
     function resetPowerUp() {
+        if (isPowerUpActive) {
+            scoreAtLastPowerUp = score; 
+        }
+
         isPowerUpActive = false;
         activePowerUpType = null;
         powerUpTimer = 0;
@@ -677,7 +679,7 @@ window.addEventListener('load', function() {
         powerUpTimerElement.innerText = '';
     }
 
-    // --- UTILITAIRES ---
+// --- UTILITAIRES ---
 
     function checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
@@ -706,8 +708,8 @@ window.addEventListener('load', function() {
 
         scoreElement.innerText = `Score: ${score}`;
         
-        // --- MODIFICATION V4 ---
-        gameSpeed += 0.0005; // Accélération plus lente (était 0.001)
+        // --- MODIFICATIONS V6 ---
+        gameSpeed += 0.00025; // Accélération divisée par 2 (était 0.0005)
     }
 
     // --- GESTION DES CONTRÔLES (GDD 5) ---
