@@ -37,12 +37,15 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // --- MODIFICATIONS V6 ---
-    const BASE_GAME_SPEED = 1.5; // Vitesse de base divisée par 2 (était 3)
+    // --- MODIFICATIONS V8 (Vitesse de l'exemple) ---
+    const BASE_GAME_SPEED = 3; // Vitesse de base augmentée (était 1.5)
+    const GAME_ACCELERATION = 0.003; // Accélération de l'exemple (était 0.00025)
+    // ---------------------------------------------
+
+    // Obstacles V6 (petits)
     const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
     const OBSTACLE_BASE_WIDTH = 40; 
-    // -------------------------
 
     // Variables d'état du jeu
     let gameState = 'loading'; 
@@ -180,8 +183,9 @@ window.addEventListener('load', function() {
                 this.jumpCount = 0;
             }
 
-            if (frameCount % 3 === 0) { 
-                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
+            // Paillettes V7
+            if (frameCount % 2 === 0) { 
+                particles.push(new Particle(this.x, this.y + this.height / 2, 'standard'));
             }
         }
 
@@ -359,19 +363,18 @@ window.addEventListener('load', function() {
     }
 
     // Classe Tête Arrière-Plan (GDD Section 6)
+    // Logique V6 : 1/3 taille, pas d'ombre
     class BackgroundHead {
         constructor() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
             
-            // --- MODIFICATIONS V6 ---
-            this.scale = 1/3; // Taille fixe 1/3 (était aléatoire 0.2-0.5)
-            // -------------------------
+            this.scale = 1/3; 
 
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
             this.speed = gameSpeed * (this.scale * 0.5); 
-            this.alpha = this.scale * 1.5; // L'alpha est semi-transparent (0.33 * 1.5 = 0.5)
+            this.alpha = 0.5; 
             
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
@@ -395,14 +398,11 @@ window.addEventListener('load', function() {
         }
 
         draw() {
-            // --- MODIFICATIONS V6 ---
-            // Filtres (ombre/silhouette) supprimés
             ctx.globalAlpha = this.alpha;
             if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             }
             ctx.globalAlpha = 1.0;
-            // -------------------------
         }
     }
 
@@ -512,9 +512,10 @@ window.addEventListener('load', function() {
                     obstacles.push(pairObstacle);
                 }, 300 / gameSpeed); 
             }
-
-            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed - BASE_GAME_SPEED) * 5;
-            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, newInterval);
+            
+            // L'intervalle de spawn s'adapte à la vitesse (logique de l'exemple)
+            const newInterval = Math.max(BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed * 5), MIN_OBSTACLE_SPAWN_INTERVAL);
+            obstacleTimer = newInterval;
             obstacleTimer += Math.random() * 20 - 10; 
         }
 
@@ -537,12 +538,18 @@ window.addEventListener('load', function() {
     }
 
     function handleEntities() {
+        // Paillettes (dessinées en premier pour être "derrière")
         particles.forEach((p, index) => {
             p.update();
             p.draw();
             if (p.life <= 0) particles.splice(index, 1);
         });
 
+        // Joueur (dessiné après les paillettes)
+        player.update();
+        player.draw();
+
+        // Obstacles
         obstacles.forEach((obstacle, index) => {
             obstacle.update();
             obstacle.draw();
@@ -563,6 +570,7 @@ window.addEventListener('load', function() {
             }
         });
 
+        // Collectibles
         collectibles.forEach((collectible, index) => {
             collectible.update();
             collectible.draw();
@@ -580,6 +588,7 @@ window.addEventListener('load', function() {
             }
         });
 
+        // Power-ups
         powerUps.forEach((powerUp, index) => {
             powerUp.update();
             powerUp.draw();
@@ -699,17 +708,16 @@ window.addEventListener('load', function() {
         handleBackground();
         handleWeather();
         
-        player.update();
-        player.draw();
-
-        handleSpawners();
+        // Ordre de dessin : Paillettes -> Joueur -> Obstacles...
         handleEntities();
+        
+        handleSpawners();
         handlePowerUps();
 
         scoreElement.innerText = `Score: ${score}`;
         
-        // --- MODIFICATIONS V6 ---
-        gameSpeed += 0.00025; // Accélération divisée par 2 (était 0.0005)
+        // --- MODIFICATIONS V8 ---
+        gameSpeed += GAME_ACCELERATION; // Utilise la vitesse de l'exemple
     }
 
     // --- GESTION DES CONTRÔLES (GDD 5) ---
