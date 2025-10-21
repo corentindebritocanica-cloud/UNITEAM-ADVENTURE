@@ -37,10 +37,10 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_S = 5; // Durée en secondes
     
-    // --- MODIFICATIONS V2.7 ---
+    // --- MODIFICATIONS V2.8 ---
     const TARGET_FPS = 60; 
-    const TARGET_BASE_SPEED = 12.0; // Vitesse de base cible effective (V2.6 x2)
-    const TARGET_ACCELERATION_PER_SECOND = 0.144; // Accélération cible effective par seconde (V2.6 x2)
+    const TARGET_BASE_SPEED = 9.0; // Vitesse de base cible effective (entre V2.6 et V2.7)
+    const TARGET_ACCELERATION_PER_SECOND = 0.108; // Accélération cible effective par seconde (entre V2.6 et V2.7)
     // -------------------------
 
     const OBSTACLE_BASE_WIDTH = 40; // Cactus fins
@@ -403,7 +403,7 @@ window.addEventListener('load', function() {
         gameState = 'gameOver';
         if (currentMusic) { currentMusic.pause(); }
         gameOverScreenElement.style.display = 'flex';
-        finalScoreElement.innerText = `${score}`; // Mise à jour ici
+        finalScoreElement.innerText = `${score}`; 
         gameContainer.classList.add('shake');
         setTimeout(() => gameContainer.classList.remove('shake'), 500);
         resetPowerUp();
