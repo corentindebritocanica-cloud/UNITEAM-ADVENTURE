@@ -99,6 +99,7 @@ html, body {
     top: 0;
     right: 0;
     font-size: 16px;
+    padding-right: 10px; /* Espace pour ne pas coller au bord */
 }
 
 #powerUpText {
@@ -134,3 +135,21 @@ html, body {
     90% { transform: translate(1px, 2px) rotate(0deg); }
     100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
+
+/* --- Ajouts V3.2 --- */
+#lives-container {
+    position: absolute;
+    top: 10px; /* Aligné verticalement avec le score/version */
+    right: 60px; /* Espace suffisant pour la version à droite */
+    display: flex;
+    gap: 5px; /* Espace entre les coeurs */
+    z-index: 10;
+    padding: 10px 0; /* Même padding vertical que score/version */
+}
+
+#lives-container img {
+    width: 30px; /* Taille des coeurs */
+    height: auto;
+    filter: drop-shadow(2px 2px 2px #000); /* Ombre portée */
+}
+/* --- Fin Ajouts V3.2 --- */
