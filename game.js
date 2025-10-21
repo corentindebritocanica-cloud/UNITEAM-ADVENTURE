@@ -37,13 +37,12 @@ window.addEventListener('load', function() {
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // --- MODIFICATIONS V9 ---
-    const BASE_GAME_SPEED = 3; 
-    const GAME_ACCELERATION = 0.003; // Vitesse de l'exemple V8
-    const OBSTACLE_BASE_WIDTH = 50; // Cactus légèrement plus grands (était 40)
-    // ------------------------
+    // --- Caractéristiques V6 ---
+    const BASE_GAME_SPEED = 1.5; // Vitesse de base lente
+    const GAME_ACCELERATION = 0.00025; // Accélération lente
+    const OBSTACLE_BASE_WIDTH = 40; // Cactus fins
+    // -------------------------
 
-    // Constantes des obstacles
     const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
 
@@ -183,9 +182,9 @@ window.addEventListener('load', function() {
                 this.jumpCount = 0;
             }
 
-            // Paillettes V7
-            if (frameCount % 2 === 0) { 
-                particles.push(new Particle(this.x, this.y + this.height / 2, 'standard'));
+            // Paillettes (Logique V6)
+            if (frameCount % 3 === 0) { 
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
             }
         }
 
@@ -209,7 +208,6 @@ window.addEventListener('load', function() {
             this.image = assets[`cactus${cactusIndex}`];
             
             const aspectRatio = this.image.height / this.image.width;
-            // V9: Augmentation de la largeur de base
             this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 10 - 5); 
             this.height = this.width * aspectRatio;
 
@@ -369,19 +367,14 @@ window.addEventListener('load', function() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
             
-            // --- MODIFICATION V9 ---
-            // Taille divisée par deux (1/3 -> 1/6)
-            this.scale = 1/6; 
+            // --- Caractéristiques V6 ---
+            this.scale = 1/3; // Taille 1/3
             // -------------------------
 
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
             this.speed = gameSpeed * (this.scale * 0.5); 
-            
-            // --- MODIFICATION V9 ---
-            // Opacité réduite (était 0.5)
-            this.alpha = 0.4; 
-            // -------------------------
+            this.alpha = 0.5; // Semi-transparent
             
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
@@ -398,20 +391,20 @@ window.addEventListener('load', function() {
             this.y = this.baseY - Math.abs(Math.sin(this.angle)) * this.jumpHeight; // Sautillement
             
             if (this.x < -this.width) {
-                this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH / 2;
+                this.x = CANVAS_WIDTH;
                 this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height - Math.random() * 150;
                 this.baseY = this.y;
-                const randomIndex = Math.floor(Math.random() * 18) + 1;
-                this.image = assets[`perso${randomIndex}`];
             }
         }
 
         draw() {
+            // --- Caractéristiques V6 ---
             ctx.globalAlpha = this.alpha;
             if (this.image && this.image.complete) {
                 ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             }
             ctx.globalAlpha = 1.0;
+            // -------------------------
         }
     }
 
@@ -498,7 +491,7 @@ window.addEventListener('load', function() {
     // --- FONCTIONS DE MISE À JOUR (Handle) ---
 
     function handleBackground() {
-        // (Le fond est géré par le CSS)
+        ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         backgroundHeads.forEach(head => {
             head.update();
@@ -523,9 +516,10 @@ window.addEventListener('load', function() {
                     obstacles.push(pairObstacle);
                 }, 300 / gameSpeed); 
             }
-            
-            const newInterval = Math.max(BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed * 5), MIN_OBSTACLE_SPAWN_INTERVAL);
-            obstacleTimer = newInterval + (Math.random() * 20 - 10); 
+
+            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - (gameSpeed - BASE_GAME_SPEED) * 5;
+            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, newInterval);
+            obstacleTimer += Math.random() * 20 - 10; 
         }
 
         collectibleTimer--;
@@ -534,13 +528,12 @@ window.addEventListener('load', function() {
             collectibleTimer = 200 + Math.random() * 100; 
         }
 
-        // Logique de spawn des Power-Ups (basée sur V5)
-        if (!isPowerUpActive && powerUps.length === 0) { 
-            if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) {
-                canSpawnPowerUp = true;
-            }
-            // Augmentation de la chance de spawn pour s'adapter à la vitesse
-            if (canSpawnPowerUp && Math.random() < 0.01) { // 1% de chance par frame
+        if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) {
+            canSpawnPowerUp = true;
+        }
+        
+        if (canSpawnPowerUp && !isPowerUpActive && powerUps.length === 0) {
+            if (Math.random() < 0.01) { // 1% de chance par frame
                 powerUps.push(new PowerUp());
                 canSpawnPowerUp = false; 
             }
@@ -548,21 +541,16 @@ window.addEventListener('load', function() {
     }
 
     function handleEntities() {
-        // Paillettes (dessinées en premier pour être "derrière" le joueur)
-        for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i];
+        particles.forEach((p, index) => {
             p.update();
             p.draw();
-            if (p.life <= 0) particles.splice(i, 1);
-        }
+            if (p.life <= 0) particles.splice(index, 1);
+        });
 
-        // Joueur
         player.update();
         player.draw();
 
-        // Obstacles
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            let obstacle = obstacles[i];
+        obstacles.forEach((obstacle, index) => {
             obstacle.update();
             obstacle.draw();
 
@@ -578,44 +566,40 @@ window.addEventListener('load', function() {
             }
 
             if (obstacle.x < -obstacle.width) {
-                obstacles.splice(i, 1);
+                obstacles.splice(index, 1);
             }
-        }
+        });
 
-        // Collectibles
-        for (let i = collectibles.length - 1; i >= 0; i--) {
-            let collectible = collectibles[i];
+        collectibles.forEach((collectible, index) => {
             collectible.update();
             collectible.draw();
 
             if (checkCollision(player.getHitbox(), collectible.getHitbox())) {
                 score += 10; 
-                for(let j=0; j<10; j++) {
+                for(let i=0; i<10; i++) {
                     particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'standard'));
                 }
-                collectibles.splice(i, 1);
+                collectibles.splice(index, 1);
             }
             
             if (collectible.x < -collectible.width) {
-                collectibles.splice(i, 1);
+                collectibles.splice(index, 1);
             }
-        }
+        });
 
-        // Power-ups
-        for (let i = powerUps.length - 1; i >= 0; i--) {
-            let powerUp = powerUps[i];
+        powerUps.forEach((powerUp, index) => {
             powerUp.update();
             powerUp.draw();
             
             if (checkCollision(player.getHitbox(), powerUp.getHitbox())) {
                 activatePowerUp(powerUp.type);
-                powerUps.splice(i, 1);
+                powerUps.splice(index, 1);
             }
 
             if (powerUp.x < -powerUp.width) {
-                powerUps.splice(i, 1);
+                powerUps.splice(index, 1);
             }
-        }
+        });
     }
 
     function handleWeather() {
@@ -722,15 +706,13 @@ window.addEventListener('load', function() {
         handleBackground();
         handleWeather();
         
-        // Ordre de dessin : Paillettes -> Joueur -> Obstacles...
         handleEntities();
-        
         handleSpawners();
         handlePowerUps();
 
         scoreElement.innerText = `Score: ${score}`;
         
-        // --- Vitesse V8 ---
+        // --- Vitesse V6 ---
         gameSpeed += GAME_ACCELERATION;
     }
 
@@ -759,6 +741,7 @@ window.addEventListener('load', function() {
     adminButton.addEventListener('click', (e) => {
         const password = prompt("Mot de passe Admin :");
         if (password === "corentin") {
+            // Recréer les fichiers admin si nécessaire
             window.open('admin.html', '_blank');
         } else if (password) {
             alert("Mauvais mot de passe.");
