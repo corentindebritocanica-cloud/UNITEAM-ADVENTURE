@@ -34,14 +34,15 @@ window.addEventListener('load', function() {
     const JUMP_POWER = 15;
     const MAX_JUMPS = 2;
     const GROUND_HEIGHT = 70;
-    const BASE_GAME_SPEED = 5;
     const POWERUP_SCORE_INTERVAL = 20; 
     const POWERUP_DURATION_MS = 5000; 
     
-    // Constantes des obstacles
+    // --- MODIFICATIONS V4 ---
+    const BASE_GAME_SPEED = 3; // Ralenti (était 5)
     const BASE_OBSTACLE_SPAWN_INTERVAL = 100;
     const MIN_OBSTACLE_SPAWN_INTERVAL = 45;
-    const OBSTACLE_BASE_WIDTH = 60; 
+    const OBSTACLE_BASE_WIDTH = 40; // Réduit (était 60)
+    // -------------------------
 
     // Variables d'état du jeu
     let gameState = 'loading'; 
@@ -104,21 +105,15 @@ window.addEventListener('load', function() {
             if (src.endsWith('.png') || src.endsWith('.jpg')) {
                 assets[key] = new Image();
                 assets[key].onload = assetLoaded;
-                
-                // ******** NOUVEAU BLOC D'ERREUR ********
-                // Si l'image ne se charge pas, on déclenche une alerte
                 assets[key].onerror = function() {
                     assetFailedToLoad(key, src);
                 };
-                // ***************************************
-
             } else if (src.endsWith('.mp3')) {
                 assets[key] = new Audio();
                 if (key.startsWith('music')) {
                     musicTracks.push(assets[key]);
                 }
                 assets[key].src = src; 
-                // Pour l'audio, on suppose qu'il se charge (le navigateur est paresseux)
                 assetLoaded(); 
             }
             if (assets[key]) {
@@ -136,16 +131,12 @@ window.addEventListener('load', function() {
         }
     }
 
-    // ******** NOUVELLE FONCTION D'ERREUR ********
     function assetFailedToLoad(key, src) {
         console.error(`Échec du chargement de l'asset: ${key} (${src})`);
         loadingTextElement.innerText = `ERREUR DE CHARGEMENT`;
-        // Affiche une alerte claire à l'utilisateur
         alert(`ERREUR : Impossible de charger le fichier "${src}". \n\nVérifiez que le fichier existe bien dans le dossier et que le nom est correct (attention aux majuscules/minuscules et à l'extension .png/.jpg).`);
-        // Arrête le jeu
         throw new Error("Échec du chargement de l'asset. Vérifiez le nom du fichier.");
     }
-    // ********************************************
 
     // --- CLASSES DU JEU ---
 
@@ -213,7 +204,8 @@ window.addEventListener('load', function() {
             this.image = assets[`cactus${cactusIndex}`];
             
             const aspectRatio = this.image.height / this.image.width;
-            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10); 
+            // --- MODIFICATION V4 ---
+            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 10 - 5); // Variation plus faible
             this.height = this.width * aspectRatio;
 
             this.x = CANVAS_WIDTH;
@@ -260,7 +252,17 @@ window.addEventListener('load', function() {
             this.width = 30;
             this.height = 30;
             this.x = CANVAS_WIDTH;
-            this.y = Math.random() * (CANVAS_HEIGHT - GROUND_HEIGHT - 200) + 50; 
+            
+            // --- MODIFICATION V4 ---
+            // Apparaît dans une plage de 150px de haut,
+            // commençant à 100px au-dessus du sol (250 - 150 = 100)
+            // et montant jusqu'à 250px au-dessus du sol.
+            // (CANVAS_HEIGHT - GROUND_HEIGHT) est le sol.
+            // (CANVAS_HEIGHT - GROUND_HEIGHT - 250) est le point de spawn max.
+            const spawnRange = 150;
+            const maxSpawnHeight = 250; // 250px au-dessus du sol
+            this.y = (CANVAS_HEIGHT - GROUND_HEIGHT - maxSpawnHeight) + (Math.random() * spawnRange);
+            // -------------------------
         }
 
         update() {
@@ -300,8 +302,14 @@ window.addEventListener('load', function() {
             this.width = 100; 
             this.height = (this.image.height / this.image.width) * this.width;
             this.x = CANVAS_WIDTH;
-            this.y = Math.random() * (CANVAS_HEIGHT - GROUND_HEIGHT - 250) + 50;
             
+            // --- MODIFICATION V4 ---
+            // Apparaît dans la même plage que les notes, mais légèrement plus haut
+            const spawnRange = 150;
+            const maxSpawnHeight = 300; // 300px au-dessus du sol
+            this.y = (CANVAS_HEIGHT - GROUND_HEIGHT - maxSpawnHeight) + (Math.random() * spawnRange);
+            // -------------------------
+
             this.baseY = this.y;
             this.angle = Math.random() * Math.PI * 2;
         }
@@ -697,7 +705,9 @@ window.addEventListener('load', function() {
         handlePowerUps();
 
         scoreElement.innerText = `Score: ${score}`;
-        gameSpeed += 0.001;
+        
+        // --- MODIFICATION V4 ---
+        gameSpeed += 0.0005; // Accélération plus lente (était 0.001)
     }
 
     // --- GESTION DES CONTRÔLES (GDD 5) ---
