@@ -1,7 +1,44 @@
+/* Réinitialisation de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Empêche le défilement sur mobile */
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Conteneur principal du jeu (aspect mobile portrait) */
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: 450px; /* Limite la largeur sur bureau */
+    max-height: 800px; /* Limite la hauteur sur bureau */
+    background-color: #333;
+    overflow: hidden;
+    border: 2px solid #fff;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background-color: #000; /* Fond noir si le dessin échoue */
+}
+
 /* Écrans de début et de fin */
 #startScreen, #gameOverScreen {
     position: absolute;
-    /* --- Modifications --- */
+    /* --- Modifications pour centrage et largeur --- */
     left: 50%;            /* Centre horizontalement */
     transform: translateX(-50%); /* Ajuste pour centrer parfaitement */
     width: 90%;           /* Prend 90% de la largeur disponible */
@@ -15,30 +52,225 @@
     border: 2px solid #333;
     display: flex;
     flex-direction: column;
-    /* align-items: center; */ /* Gardé pour centrer les éléments enfants */
+    align-items: center; /* Centre les éléments enfants */
     gap: 10px;
 }
 
-/* Assure-toi que les éléments internes peuvent prendre de la place */
-#startScreen > * { /* Cible les enfants directs de #startScreen */
-    max-width: 100%; /* Empêche les éléments comme le logo ou l'input de déborder */
+#gameOverScreen {
+    display: none;
 }
 
-/* Spécifique pour l'input pour qu'il ne soit pas trop large */
+#gameOverScreen h1 {
+    color: #dc3545;
+}
+
+/* S'assure que les éléments internes ne dépassent pas */
+#startScreen > *, #gameOverScreen > * {
+    max-width: 100%;
+}
+
+#logo {
+    /* max-width: 80%; */ /* Remplacé par la règle générale ci-dessus */
+    margin-bottom: 20px;
+    width: auto; /* Permet au max-width de fonctionner correctement */
+    height: auto; /* Garder les proportions */
+    max-height: 150px; /* Limiter la hauteur du logo */
+}
+
+#loadingText {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#powerup-info {
+    margin-top: 15px; /* Réduit l'espace */
+    width: 100%; /* Prend toute la largeur dispo dans le conteneur */
+    text-align: left; /* Aligner le contenu interne à gauche */
+}
+#powerup-info h3 {
+    text-align: center;
+    margin-bottom: 8px;
+    color: #555;
+    font-size: 1em;
+}
+#powerup-info .power-up-item {
+     display: flex;
+     align-items: center;
+     margin-bottom: 5px;
+     justify-content: center; /* Centrer l'icône et le texte ensemble */
+}
+#powerup-info img {
+    width: 30px;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+.power-up-desc {
+    font-size: 0.9em;
+    color: #333;
+}
+
+
+#adminButton {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 5px;
+    font-size: 12px;
+    background: #555;
+    color: white;
+    border: 1px solid #fff;
+    cursor: pointer;
+}
+
+/* UI en jeu */
+#score, #version, #powerUpText, #powerUpTimer {
+    position: absolute;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000;
+    padding: 10px;
+    user-select: none; /* Empêche la sélection de texte */
+}
+
+#score {
+    top: 0;
+    left: 0;
+}
+
+#version {
+    top: 0;
+    right: 0;
+    font-size: 16px;
+    padding-right: 10px;
+}
+
+#powerUpText {
+    top: 40px;
+    left: 0;
+    font-size: 20px;
+    color: #FFD700; /* Or */
+}
+
+#powerUpTimer {
+    top: 70px;
+    left: 0;
+    font-size: 18px;
+    color: #FFD700;
+}
+
+/* Animation de secousse pour Game Over */
+.shake {
+    animation: shake 0.5s;
+    animation-iteration-count: 1;
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+/* --- Style Vies --- */
+#lives-container {
+    position: absolute;
+    top: 10px;
+    right: 60px;
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+    padding: 10px 0;
+}
+
+#lives-container img {
+    width: 30px;
+    height: auto;
+    filter: drop-shadow(2px 2px 2px #000);
+}
+/* --- Fin Style Vies --- */
+
+
+/* --- Style Flash --- */
+#flash-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.1s ease-out;
+}
+
+#flash-overlay.active {
+    opacity: 0.7;
+}
+/* --- Fin Style Flash --- */
+
+/* --- Style Input Nom --- */
 .player-name-input {
     margin: 15px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
-    width: 90%; /* Prend 90% de la largeur du conteneur #startScreen */
-    max-width: 250px; /* Limite la largeur max de la zone input+label */
+    width: 90%; /* Prend 90% de #startScreen */
+    max-width: 250px;
 }
-
+.player-name-input label {
+    font-size: 0.9em;
+    color: #333; /* Plus lisible sur fond blanc */
+}
 #playerNameInput {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    width: 100%; /* Prend toute la largeur de .player-name-input */
+    width: 100%;
     text-align: center;
 }
+/* --- Fin Style Input Nom --- */
+
+/* --- Style Classement --- */
+#leaderboard {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ccc;
+    width: 100%;
+    max-height: 150px;
+    overflow-y: auto;
+    text-align: left;
+}
+#leaderboard h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #333;
+}
+#leaderboardList {
+    list-style-position: inside;
+    padding-left: 10px;
+    color: #555;
+}
+#leaderboardList li {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+#leaderboardList li strong {
+    display: inline-block;
+    min-width: 50px;
+    text-align: right;
+    margin-left: 10px;
+    color: #000;
+}
+/* --- Fin Style Classement --- */
