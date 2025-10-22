@@ -16,8 +16,12 @@ window.addEventListener('load', function() {
     const adminButton = document.getElementById('adminButton');
     const livesContainer = document.getElementById('lives-container');
     const flashOverlay = document.getElementById('flash-overlay');
+    // V4.1: Récupérer l'input du nom et la liste du classement
+    const playerNameInput = document.getElementById('playerNameInput');
+    const leaderboardListElement = document.getElementById('leaderboardList');
 
-    if (!canvas || !ctx || !gameContainer || !scoreElement || !versionElement || !powerUpTextElement || !powerUpTimerElement || !loadingTextElement || !menuElement || !gameOverScreenElement || !finalScoreElement || !adminButton || !livesContainer || !flashOverlay) {
+
+    if (!canvas || !ctx || !gameContainer || !scoreElement || !versionElement || !powerUpTextElement || !powerUpTimerElement || !loadingTextElement || !menuElement || !gameOverScreenElement || !finalScoreElement || !adminButton || !livesContainer || !flashOverlay || !playerNameInput || !leaderboardListElement) {
         console.error("Un ou plusieurs éléments UI essentiels sont manquants ! Vérifiez les IDs dans index.html.");
         if(loadingTextElement) loadingTextElement.innerText = "ERREUR: INTERFACE INCOMPLETE";
         alert("Erreur critique: L'interface du jeu n'a pas pu être initialisée correctement.");
@@ -27,7 +31,7 @@ window.addEventListener('load', function() {
     // Dimensions du Canvas
     let CANVAS_WIDTH, CANVAS_HEIGHT;
     function resizeCanvas() {
-        if (!gameContainer || !canvas) return; // Sécurité
+        if (!gameContainer || !canvas) return;
         CANVAS_WIDTH = gameContainer.clientWidth;
         CANVAS_HEIGHT = gameContainer.clientHeight;
         canvas.width = CANVAS_WIDTH;
@@ -36,8 +40,7 @@ window.addEventListener('load', function() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-
-    // Constantes du jeu (V3)
+    // Constantes du jeu (V4 = V3.6)
     const PLAYER_WIDTH = 50; const PLAYER_HEIGHT = 50; const GRAVITY = 0.8;
     const JUMP_POWER = 15; const MAX_JUMPS = 2; const GROUND_HEIGHT = 70;
     const BASE_GAME_SPEED = 5; const GAME_ACCELERATION = 0.001;
@@ -47,6 +50,7 @@ window.addEventListener('load', function() {
 
     // Variables d'état
     let gameState = 'loading'; let player;
+    let currentPlayerName = ''; // V4.1: Pour stocker le nom
     let obstacles = []; let collectibles = []; let powerUps = [];
     let backgroundHeads = []; let particles = [];
     let score = 0; let lives = INITIAL_LIVES; let gameSpeed = BASE_GAME_SPEED;
@@ -56,7 +60,7 @@ window.addEventListener('load', function() {
     let canSpawnPowerUp = false; let scoreAtLastPowerUp = 0;
     let currentMusic = null; const musicTracks = []; const assets = {};
 
-    // Ressources (noms en minuscules pour compatibilité)
+    // Ressources
     const assetSources = {
         logo: 'uniteamadventure.png', background: 'FOND DE PLAN.jpg',
         ...Array.from({length: 18}, (_, i) => ({[`perso${i+1}`]: `perso${i+1}.png`})).reduce((a, b) => ({...a, ...b}), {}),
@@ -98,6 +102,11 @@ window.addEventListener('load', function() {
         loadingTextElement.innerText = `Chargement... (${Math.round((assetsLoaded / totalAssets) * 100)}%)`;
         if (assetsLoaded === totalAssets) {
             loadingTextElement.style.display = 'none';
+            // V4.1: Restaurer le nom du joueur s'il existe
+            const savedName = localStorage.getItem('uniteamPlayerName');
+            if (savedName) {
+                 playerNameInput.value = savedName;
+            }
             initMenu();
         }
     }
@@ -108,9 +117,15 @@ window.addEventListener('load', function() {
         gameState = 'error';
     }
 
-    // --- CLASSES DU JEU (UNE SEULE DEFINITION PAR CLASSE) ---
-
-    class Player {
+    // --- CLASSES DU JEU (Inchangées par rapport à V3.6) ---
+    class Player { /* ... */ }
+    class Obstacle { /* ... */ }
+    class Collectible { /* ... */ }
+    class PowerUp { /* ... */ }
+    class Particle { /* ... */ }
+    class BackgroundHead { /* ... */ }
+    // --- (Copier les 6 classes de V3.6 ici) ---
+     class Player {
         constructor() {
             this.width = PLAYER_WIDTH; this.height = PLAYER_HEIGHT;
             this.x = 50; this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
@@ -130,7 +145,6 @@ window.addEventListener('load', function() {
             const groundPos = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
             if (this.y > groundPos) { this.y = groundPos; this.velocityY = 0; if (!this.isGrounded) { this.isGrounded = true; this.jumpCount = 0; }}
             else { this.isGrounded = false; }
-            // Paillettes V3.5
             particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
         }
         draw() {
@@ -139,8 +153,7 @@ window.addEventListener('load', function() {
         }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
-
-    class Obstacle {
+     class Obstacle {
         constructor() {
             const i = Math.floor(Math.random() * 4) + 1; this.image = assets[`cactus${i}`];
             const ratio = (this.image && this.image.height && this.image.width) ? this.image.height / this.image.width : 1;
@@ -157,8 +170,7 @@ window.addEventListener('load', function() {
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x + this.width*0.1, y: this.y + this.height*0.1, width: this.width*0.8, height: this.height*0.8 }; }
     }
-
-    class Collectible {
+     class Collectible {
         constructor() {
             this.image = assets.note; this.width = 30; this.height = 30; this.x = CANVAS_WIDTH;
             const pgy = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT; const minH = 70; const maxH = 120;
@@ -175,8 +187,7 @@ window.addEventListener('load', function() {
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
-
-    class PowerUp {
+     class PowerUp {
         constructor() {
             const types = ['invincible', 'superjump', 'magnet']; this.type = types[Math.floor(Math.random() * types.length)];
             if (this.type === 'invincible') this.image = assets.chapeau; else if (this.type === 'superjump') this.image = assets.botte; else this.image = assets.aimant;
@@ -191,8 +202,7 @@ window.addEventListener('load', function() {
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
-
-    class Particle {
+     class Particle {
         constructor(x, y, type) {
             this.x = x; this.y = y; this.type = type; this.size = Math.random() * 5 + 2;
             this.speedX = -Math.random() * 2 - 1; this.speedY = Math.random() * 2 - 1;
@@ -205,8 +215,7 @@ window.addEventListener('load', function() {
             ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1.0;
         }
     }
-
-    class BackgroundHead {
+     class BackgroundHead {
         constructor() {
             const i = Math.floor(Math.random() * 18) + 1; this.image = assets[`perso${i}`]; this.scale = Math.random() * 0.3 + 0.2;
             this.width = (this.image?.width || 50) * this.scale; this.height = (this.image?.height || 50) * this.scale;
@@ -237,6 +246,7 @@ window.addEventListener('load', function() {
         }
     }
 
+
     // --- FONCTIONS DE GESTION DU JEU ---
     function initMenu() {
         gameState = 'menu';
@@ -246,7 +256,20 @@ window.addEventListener('load', function() {
         livesContainer.style.display = 'none'; adminButton.style.display = 'block';
     }
 
+    // V4.1: Modifiée pour lire le nom
     function startGame() {
+        // Lire et valider le nom
+        currentPlayerName = playerNameInput.value.trim();
+        if (!currentPlayerName) {
+            alert("Veuillez entrer votre nom !");
+            return;
+        }
+        if (currentPlayerName.length > 15) { currentPlayerName = currentPlayerName.substring(0, 15); }
+        // Sauvegarder le nom pour la prochaine fois
+        localStorage.setItem('uniteamPlayerName', currentPlayerName);
+        console.log("Player Name:", currentPlayerName);
+
+        // Reste du démarrage
         if (!ctx) { console.error("Canvas non prêt."); return; }
         gameState = 'playing';
         menuElement.style.display = 'none'; gameOverScreenElement.style.display = 'none';
@@ -271,13 +294,28 @@ window.addEventListener('load', function() {
         updateGame();
     }
 
-    function endGame() {
+    // V4.1: Modifiée pour appeler submitScore et displayLeaderboard
+    async function endGame() {
+        if (gameState === 'gameOver') return;
         gameState = 'gameOver';
         if (currentMusic) { currentMusic.pause(); }
-        gameOverScreenElement.style.display = 'flex'; finalScoreElement.innerText = `${score}`;
+
+        // Envoyer le score
+        try {
+            await submitScore(currentPlayerName, score);
+        } catch (error) {
+            console.error("Erreur envoi score:", error);
+            // Optionnel : informer l'utilisateur
+        }
+
+        gameOverScreenElement.style.display = 'flex';
+        finalScoreElement.innerText = `${score}`;
         gameContainer.classList.add('shake');
         setTimeout(() => gameContainer.classList.remove('shake'), 500);
         resetPowerUp();
+
+        // Afficher le classement
+        displayLeaderboard();
     }
 
     // Fonction affichage vies V3.5
@@ -298,160 +336,66 @@ window.addEventListener('load', function() {
         setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
     }
 
-    // --- FONCTIONS DE MISE À JOUR (Handle) ---
-    function handleBackground() {
-        if(assets.background && assets.background.complete) { ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); }
-        else { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); }
-        backgroundHeads.forEach(head => { head.update(); head.draw(); });
-        ctx.fillStyle = '#666'; ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
-    }
+    // --- V4.1: FONCTIONS FIREBASE ---
 
-    function handleSpawners() {
-        obstacleTimer--;
-        if (obstacleTimer <= 0) {
-            obstacles.push(new Obstacle());
-            if (Math.random() < 0.1) {
-                setTimeout(() => {
-                    if(gameState !== 'playing') return;
-                    const p = new Obstacle(); p.width *= 0.8; p.height *= 0.8;
-                    p.y = CANVAS_HEIGHT - GROUND_HEIGHT - p.height; obstacles.push(p);
-                }, 300 / gameSpeed);
-            }
-            const sf = Math.max(1, (gameSpeed - BASE_GAME_SPEED));
-            const ni = BASE_OBSTACLE_SPAWN_INTERVAL - sf * 5;
-            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, ni) + (Math.random() * 20 - 10);
+    // Fonction pour envoyer le score (utilise window.db défini dans index.html)
+    async function submitScore(name, scoreValue) {
+        if (!window.db || !name || typeof scoreValue !== 'number' || scoreValue < 0) {
+            console.log("DB non prête, nom/score invalide, non envoyé.");
+            return;
         }
-        collectibleTimer--;
-        if (collectibleTimer <= 0) { collectibles.push(new Collectible()); collectibleTimer = 200 + Math.random() * 100; }
-        if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) { canSpawnPowerUp = true; }
-        if (canSpawnPowerUp && !isPowerUpActive && powerUps.length === 0) {
-            if (Math.random() < 0.005) { powerUps.push(new PowerUp()); canSpawnPowerUp = false; }
-        }
-    }
+        // Accéder aux fonctions Firestore via l'objet global firebase
+        const { collection, doc, getDoc, setDoc } = firebase.firestore;
 
-    // handleEntities V3.5
-    function handleEntities() {
-        particles.forEach((p, index) => { p.update(); p.draw(); if (p.life <= 0) particles.splice(index, 1); });
-        if (player) { player.update(); player.draw(); }
+        console.log(`Tentative d'envoi: ${name} - ${scoreValue}`);
+        const scoresCollectionRef = collection(window.db, 'scores'); // 'scores' = nom de la collection
+        const playerDocRef = doc(scoresCollectionRef, name); // Nom comme ID
 
-        obstacles.forEach((obstacle, index) => {
-            if (!obstacle) return;
-            obstacle.update(); obstacle.draw();
-            if (player && checkCollision(player.getHitbox(), obstacle.getHitbox())) {
-                if (activePowerUpType !== 'invincible') {
-                    triggerFlash(); lives--; updateLivesDisplay();
-                    obstacles.splice(index, 1);
-                    if (lives <= 0) { endGame(); }
+        try {
+            const docSnap = await getDoc(playerDocRef);
+
+            if (docSnap.exists()) {
+                const currentBestScore = docSnap.data().score || 0;
+                if (scoreValue > currentBestScore) {
+                    console.log(`Nouveau meilleur score pour ${name}: ${scoreValue}`);
+                    await setDoc(playerDocRef, { name: name, score: scoreValue });
+                } else {
+                    console.log(`Score ${scoreValue} pas meilleur que ${currentBestScore}`);
                 }
-            } else if (obstacle.x + obstacle.width < (player ? player.x : 0) && !obstacle.passed) {
-                score++; obstacle.passed = true;
+            } else {
+                console.log(`Nouveau joueur: ${name} score ${scoreValue}`);
+                await setDoc(playerDocRef, { name: name, score: scoreValue });
             }
-            if (obstacle.x < -obstacle.width && (!player || !checkCollision(player.getHitbox(), obstacle.getHitbox()))) { obstacles.splice(index, 1); }
-        });
+        } catch (error) {
+            console.error("Erreur Firestore écriture: ", error);
+            throw error; // Propager l'erreur
+        }
+    }
 
-        collectibles.forEach((c, index) => {
-             if (!c) return; c.update(); c.draw();
-            if (player && checkCollision(player.getHitbox(), c.getHitbox())) {
-                score += 10;
-                for(let i=0; i<10; i++) { if(player) particles.push(new Particle(player.x+player.width/2, player.y+player.height/2, 'standard')); }
-                collectibles.splice(index, 1);
+    // Fonction pour afficher le classement (utilise window.db)
+    async function displayLeaderboard() {
+        if (!leaderboardListElement) return;
+        leaderboardListElement.innerHTML = '<li>Chargement...</li>';
+
+        if (!window.db) {
+             leaderboardListElement.innerHTML = '<li>Erreur connexion classement.</li>';
+             return;
+        }
+        // Accéder aux fonctions Firestore via l'objet global firebase
+        const { collection, query, orderBy, limit, getDocs } = firebase.firestore;
+
+        try {
+            const scoresCollectionRef = collection(window.db, 'scores');
+            const q = query(scoresCollectionRef, orderBy('score', 'desc'), limit(10));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                leaderboardListElement.innerHTML = '<li>Aucun score enregistré.</li>';
+                return;
             }
-            if (c.x < -c.width) { collectibles.splice(index, 1); }
-        });
-        powerUps.forEach((p, index) => {
-              if (!p) return; p.update(); p.draw();
-            if (player && checkCollision(player.getHitbox(), p.getHitbox())) { activatePowerUp(p.type); powerUps.splice(index, 1); }
-            if (p.x < -p.width) { powerUps.splice(index, 1); }
-        });
-    }
 
-    function handleWeather() {
-        const cycle = (score % 500) / 500; const nightAlpha = Math.sin(cycle * Math.PI) * 0.7;
-        ctx.fillStyle = `rgba(0, 0, 50, ${nightAlpha})`; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        rainTimer--;
-        if (rainTimer <= 0 && !rainActive) {
-            if (Math.random() < 0.3) { rainActive = true; rainDuration = (Math.random() * 10 + 5) * 60; }
-            rainTimer = 30 * 60;
-        }
-        if (rainActive) {
-            rainDuration--; if (rainDuration <= 0) rainActive = false;
-            ctx.fillStyle = 'rgba(0, 0, 100, 0.1)'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)'; ctx.lineWidth = 1;
-             for(let i=0; i<50; i++) {
-                const x=Math.random()*CANVAS_WIDTH, y=Math.random()*CANVAS_HEIGHT, len=Math.random()*10+5;
-                ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-2, y+len); ctx.stroke();
-            }
-        }
-    }
-
-    function handlePowerUps() {
-        if (!isPowerUpActive) return;
-        powerUpTimer -= 1000 / 60;
-        if (powerUpTimer <= 0) { resetPowerUp(); }
-        else { powerUpTimerElement.innerText = (powerUpTimer / 1000).toFixed(1) + 's'; }
-    }
-
-    function activatePowerUp(type) {
-        isPowerUpActive = true; activePowerUpType = type; powerUpTimer = POWERUP_DURATION_MS;
-        scoreAtLastPowerUp = score; let text = '';
-        if (type === 'invincible') text = 'INVINCIBLE !';
-        if (type === 'superjump') text = 'SUPER SAUT !';
-        if (type === 'magnet') text = 'AIMANT !';
-        powerUpTextElement.innerText = text; powerUpTextElement.style.opacity = 1;
-        setTimeout(() => { if(powerUpTextElement) powerUpTextElement.style.opacity = 0; }, 2000);
-        for(let i=0; i<30; i++) { if(player) particles.push(new Particle(player.x+player.width/2, player.y+player.height/2, 'gold')); }
-    }
-
-    function resetPowerUp() {
-        isPowerUpActive = false; activePowerUpType = null; powerUpTimer = 0;
-        if(powerUpTextElement) powerUpTextElement.innerText = '';
-        if(powerUpTimerElement) powerUpTimerElement.innerText = '';
-    }
-
-    // --- UTILITAIRES ---
-    function checkCollision(rect1, rect2) {
-         if (!rect1 || !rect2) return false;
-        return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
-               rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
-    }
-
-    // --- BOUCLE DE JEU PRINCIPALE ---
-    function updateGame() {
-        if (gameState !== 'playing' || !ctx) return;
-        requestAnimationFrame(updateGame);
-        frameCount++;
-        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        handleBackground(); handleWeather(); handleEntities(); handleSpawners(); handlePowerUps();
-        scoreElement.innerText = `Score: ${score}`;
-        gameSpeed += GAME_ACCELERATION;
-    }
-
-    // --- GESTION DES CONTRÔLES ---
-     function handleInput(event) {
-        event.preventDefault();
-        if (currentMusic && currentMusic.paused && gameState !== 'loading') {
-             let playPromise = currentMusic.play();
-             if (playPromise !== undefined) { playPromise.catch(e => console.log("Reprise audio échouée.", e)); }
-        }
-        switch (gameState) {
-            case 'menu': startGame(); break;
-            case 'playing': if (player) player.jump(); break;
-            case 'gameOver': initMenu(); break;
-        }
-    }
-    gameContainer.addEventListener('mousedown', handleInput);
-    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
-
-    // Bouton Admin
-    adminButton.addEventListener('click', (e) => {
-        const password = prompt("Mot de passe Admin :");
-        if (password === "corentin") { window.open('admin.html', '_blank'); } // Garder référence admin.html
-        else if (password) { alert("Mauvais mot de passe."); }
-    });
-    function stopEventPropagation(e) { e.stopPropagation(); }
-    adminButton.addEventListener('mousedown', stopEventPropagation);
-    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
-
-    // Démarrer le chargement
-    loadAssets();
-});
+            let leaderboardHTML = '';
+            let rank = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const name = data.name.replace(/</g, "&lt;").replace(
