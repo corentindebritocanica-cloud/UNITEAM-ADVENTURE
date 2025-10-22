@@ -14,7 +14,7 @@
         <div id="score">Score: 0</div>
         <div id="lives-container">
             </div>
-        <div id="version">V4.1</div> {/* Mise à jour de la version */}
+        <div id="version">V4.2</div>
         <div id="powerUpText"></div>
         <div id="powerUpTimer"></div>
 
@@ -32,9 +32,18 @@
             </div>
             <div id="powerup-info">
                 <h3>Power-Ups:</h3>
-                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
-                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
-                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
+                <div class="power-up-item">
+                     <img src="chapeau.png" alt="Chapeau">
+                     <p class="power-up-desc">Invincible</p>
+                </div>
+                 <div class="power-up-item">
+                     <img src="botte.png" alt="Botte">
+                     <p class="power-up-desc">Super Saut</p>
+                 </div>
+                 <div class="power-up-item">
+                     <img src="aimant.png" alt="Aimant">
+                      <p class="power-up-desc">Aimant à notes</p>
+                 </div>
             </div>
             <button id="adminButton">Admin</button>
         </div>
@@ -53,7 +62,7 @@
         </div>
     </div>
 
-    {/* --- BLOC FIREBASE AJOUTÉ ICI --- */}
+    {/* --- BLOC FIREBASE --- */}
     <script type="module">
       // Importer les fonctions nécessaires depuis les SDKs
       import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
