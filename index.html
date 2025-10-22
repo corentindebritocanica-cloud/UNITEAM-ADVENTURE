@@ -14,7 +14,7 @@
         <div id="score">Score: 0</div>
         <div id="lives-container">
             </div>
-        <div id="version">V4.2</div>
+        <div id="version">V4</div>
         <div id="powerUpText"></div>
         <div id="powerUpTimer"></div>
 
@@ -25,25 +25,11 @@
         <div id="menu" class="screen" style="display: none;">
             <img src="uniteamadventure.png" alt="Logo UNITEAM ADVENTURE" id="logo">
             <h1>Appuyez pour commencer</h1>
-            {/* Champ pour le nom du joueur */}
-            <div class="player-name-input">
-                <label for="playerNameInput">Votre Nom:</label>
-                <input type="text" id="playerNameInput" maxlength="15" placeholder="Entrez votre nom">
-            </div>
             <div id="powerup-info">
                 <h3>Power-Ups:</h3>
-                <div class="power-up-item">
-                     <img src="chapeau.png" alt="Chapeau">
-                     <p class="power-up-desc">Invincible</p>
-                </div>
-                 <div class="power-up-item">
-                     <img src="botte.png" alt="Botte">
-                     <p class="power-up-desc">Super Saut</p>
-                 </div>
-                 <div class="power-up-item">
-                     <img src="aimant.png" alt="Aimant">
-                      <p class="power-up-desc">Aimant à notes</p>
-                 </div>
+                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
+                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
+                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
             </div>
             <button id="adminButton">Admin</button>
         </div>
@@ -51,49 +37,10 @@
         <div id="gameOverScreen" class="screen" style="display: none;">
             <h1>Game Over</h1>
             <h2 id="finalScore">Score: 0</h2>
-             {/* Zone pour afficher le classement */}
-            <div id="leaderboard">
-                <h3>Meilleurs Scores:</h3>
-                <ol id="leaderboardList">
-                    <li>Chargement...</li>
-                </ol>
-            </div>
             <p>Appuyez pour recommencer</p>
         </div>
     </div>
 
-    {/* --- BLOC FIREBASE --- */}
-    <script type="module">
-      // Importer les fonctions nécessaires depuis les SDKs
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-      // AJOUT : Importer la fonction pour Firestore
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-
-      // Ta configuration Firebase que tu as copiée
-      const firebaseConfig = {
-        apiKey: "AIzaSyDxCWO-fBOPSLQOznoMV4kcxzCM2MGkjPg", // Assure-toi que c'est bien ta clé
-        authDomain: "uniteam-adventure-leaderboard.firebaseapp.com",
-        projectId: "uniteam-adventure-leaderboard",
-        storageBucket: "uniteam-adventure-leaderboard.firebasestorage.app", // Vérifie si c'est .appspot.com ou .firebasestorage.app selon ta config Firebase
-        messagingSenderId: "606369439321",
-        appId: "1:606369439321:web:b89fdd115107e362ea5b48",
-        measurementId: "G-MNVEQ4ENYZ" // Optionnel, pour Analytics
-      };
-
-      // Initialiser Firebase
-      const app = initializeApp(firebaseConfig);
-      // AJOUT : Initialiser Firestore
-      const db = getFirestore(app);
-
-      // AJOUT TRÈS IMPORTANT : Rendre 'db' accessible globalement
-      window.db = db;
-
-      console.log("Firebase initialisé !");
-    </script>
-    {/* --- FIN BLOC FIREBASE --- */}
-
-
-    {/* Ton script de jeu (doit être après l'initialisation de Firebase) */}
     <script src="game.js"></script>
 </body>
 </html>
