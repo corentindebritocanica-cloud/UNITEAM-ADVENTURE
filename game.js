@@ -14,8 +14,8 @@ window.addEventListener('load', function() {
     const gameOverScreenElement = document.getElementById('gameOverScreen');
     const finalScoreElement = document.getElementById('finalScore');
     const adminButton = document.getElementById('adminButton');
-    const livesContainer = document.getElementById('lives-container');
-    const flashOverlay = document.getElementById('flash-overlay'); // V3.3
+    const livesContainer = document.getElementById('lives-container'); // Nécessaire pour V3.2/3.3
+    const flashOverlay = document.getElementById('flash-overlay'); // Nécessaire pour V3.3
 
     // Dimensions du Canvas (remplit le conteneur)
     let CANVAS_WIDTH, CANVAS_HEIGHT;
@@ -96,11 +96,7 @@ window.addEventListener('load', function() {
     // --- CHARGEMENT DES RESSOURCES ---
     let assetsLoaded = 0;
     const totalAssets = Object.keys(assetSources).length;
-    function loadAssets() { /* ... (inchangé) ... */ }
-    function assetLoaded() { /* ... (inchangé) ... */ }
-    function assetFailedToLoad(key, src) { /* ... (inchangé) ... */ }
-     // --- (Copier le code de chargement V3 ici) ---
-     function loadAssets() {
+    function loadAssets() {
         for (const key in assetSources) {
             const src = assetSources[key];
             if (src.endsWith('.png') || src.endsWith('.jpg')) {
@@ -114,12 +110,14 @@ window.addEventListener('load', function() {
                 if (key.startsWith('music')) {
                     musicTracks.push(assets[key]);
                 }
-                assets[key].src = src;
-                assetLoaded();
+                // Ne pas définir .src ici pour éviter le chargement automatique non désiré
+                // assets[key].src = src; // Ligne enlevée
+                assetLoaded(); // Compter comme chargé pour l'instant
             }
-             if (assets[key]) {
-                 assets[key].src = src;
-            } else {
+             // Définir .src après l'initialisation pour tous
+            if (assets[key]) {
+                assets[key].src = src;
+            } else if (!src.endsWith('.mp3')) { // Ne pas logger pour l'audio car on charge plus tard
                  console.warn(`Asset key ${key} was potentially not initialized correctly before setting src.`);
             }
         }
@@ -141,13 +139,9 @@ window.addEventListener('load', function() {
         throw new Error("Échec du chargement de l'asset. Vérifiez le nom du fichier.");
     }
 
-
     // --- CLASSES DU JEU ---
 
-    class Player { /* ... (inchangé) ... */ }
-    class Obstacle { /* ... (inchangé) ... */ }
-     // --- (Copier Player et Obstacle de V3 ici) ---
-     class Player {
+    class Player {
         constructor() {
             this.width = PLAYER_WIDTH;
             this.height = PLAYER_HEIGHT;
@@ -201,7 +195,8 @@ window.addEventListener('load', function() {
             return { x: this.x, y: this.y, width: this.width, height: this.height };
         }
     }
-     class Obstacle {
+
+    class Obstacle {
         constructor() {
             const cactusIndex = Math.floor(Math.random() * 4) + 1;
             this.image = assets[`cactus${cactusIndex}`];
@@ -240,28 +235,20 @@ window.addEventListener('load', function() {
         }
     }
 
-
     class Collectible {
         constructor() {
             this.image = assets.note;
             this.width = 30;
             this.height = 30;
             this.x = CANVAS_WIDTH;
-            // --- MODIFICATION V3.3 ---
-            // Hauteur limitée entre 70px et 120px au-dessus du joueur au sol
+            // Hauteur V3.3
             const playerGroundY = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT;
             const minHeightAbovePlayer = 70;
             const maxHeightAbovePlayer = 120;
             this.y = playerGroundY - (Math.random() * (maxHeightAbovePlayer - minHeightAbovePlayer) + minHeightAbovePlayer);
-             // S'assurer qu'il ne sort pas de l'écran en haut
              if(this.y < 20) this.y = 20;
-            // -------------------------
         }
-        update() { /* ... (inchangé) ... */ }
-        draw() { /* ... (inchangé) ... */ }
-        getHitbox() { /* ... (inchangé) ... */ }
-         // --- (Copier update, draw, getHitbox de V3 ici) ---
-         update() {
+        update() {
             if (activePowerUpType === 'magnet') {
                 const dx = player.x - this.x;
                 const dy = player.y - this.y;
@@ -293,27 +280,19 @@ window.addEventListener('load', function() {
             this.width = 100;
             this.height = (this.image && this.image.height && this.image.width) ? (this.image.height / this.image.width) * this.width : 100;
             this.x = CANVAS_WIDTH;
-            // --- MODIFICATION V3.3 ---
-            // Hauteur limitée entre 70px et 120px au-dessus du joueur au sol
+            // Hauteur V3.3
             const playerGroundY = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT;
             const minHeightAbovePlayer = 70;
             const maxHeightAbovePlayer = 120;
-             // Spawn un peu plus haut pour être distinct des notes
             this.y = playerGroundY - (Math.random() * (maxHeightAbovePlayer - minHeightAbovePlayer) + minHeightAbovePlayer);
-             if(this.y < 20) this.y = 20; // Empêche de sortir en haut
-             // Assurer que le bas du powerup est au-dessus du minHeight
+             if(this.y < 20) this.y = 20;
              if (this.y + this.height > playerGroundY - minHeightAbovePlayer) {
                  this.y = playerGroundY - minHeightAbovePlayer - this.height;
              }
-            // -------------------------
             this.baseY = this.y;
             this.angle = Math.random() * Math.PI * 2;
         }
-        update() { /* ... (inchangé) ... */ }
-        draw() { /* ... (inchangé) ... */ }
-        getHitbox() { /* ... (inchangé) ... */ }
-         // --- (Copier update, draw, getHitbox de V3 ici) ---
-         update() {
+        update() {
             this.x -= gameSpeed;
             this.angle += 0.05;
             this.y = this.baseY + Math.sin(this.angle) * 20;
@@ -328,9 +307,7 @@ window.addEventListener('load', function() {
         }
     }
 
-    class Particle { /* ... (inchangé) ... */ }
-     // --- (Copier la classe Particle de V3 ici) ---
-     class Particle {
+    class Particle {
         constructor(x, y, type) {
             this.x = x; this.y = y; this.type = type;
             this.size = Math.random() * 5 + 2;
@@ -355,28 +332,24 @@ window.addEventListener('load', function() {
         }
     }
 
-
     class BackgroundHead {
         constructor() {
             const imgIndex = Math.floor(Math.random() * 18) + 1;
             this.image = assets[`perso${imgIndex}`];
-            this.scale = Math.random() * 0.3 + 0.2; // Taille/Vitesse aléatoire
+            this.scale = Math.random() * 0.3 + 0.2;
             this.width = (this.image.width || 50) * this.scale;
             this.height = (this.image.height || 50) * this.scale;
             this.speed = BASE_GAME_SPEED * (this.scale * 0.5);
             this.alpha = this.scale * 1.5;
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
-            // --- MODIFICATION V3.3 ---
-            // Spawn minimum à 160px au-dessus du sol joueur
-            const playerGroundY = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT;
-            const minHeightAbovePlayer = 160;
-            const maxSpawnY = playerGroundY - minHeightAbovePlayer - this.height; // Position Y max (la plus basse permise)
-            const minSpawnY = 50; // Position Y min (près du haut)
+            // Hauteur V3.1
+            const groundPlayerY = CANVAS_HEIGHT - GROUND_HEIGHT; // Référence au sol
+            const minHeightAboveGround = 160 + PLAYER_HEIGHT; // 160px au-dessus du HAUT du joueur au sol
+            const maxSpawnY = groundPlayerY - minHeightAboveGround - this.height;
+            const minSpawnY = 50;
             this.y = Math.random() * (maxSpawnY - minSpawnY) + minSpawnY;
-             // Assurer que Y est valide
-             if (this.y > maxSpawnY) this.y = maxSpawnY;
-             if (this.y < minSpawnY) this.y = minSpawnY;
-            // -------------------------
+            if (this.y > maxSpawnY) this.y = maxSpawnY;
+            if (this.y < minSpawnY) this.y = minSpawnY;
             this.baseY = this.y;
             this.angle = Math.random() * Math.PI * 2;
             this.jumpHeight = Math.random() * 20 + 10;
@@ -388,15 +361,13 @@ window.addEventListener('load', function() {
             this.y = this.baseY - Math.abs(Math.sin(this.angle)) * this.jumpHeight;
             if (this.x < -this.width) {
                 this.x = CANVAS_WIDTH;
-                // --- MODIFICATION V3.3 --- (Réapparition dans la nouvelle zone haute)
-                 const playerGroundY = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT;
-                 const minHeightAbovePlayer = 160;
-                 const maxSpawnY = playerGroundY - minHeightAbovePlayer - this.height;
-                 const minSpawnY = 50;
-                 this.y = Math.random() * (maxSpawnY - minSpawnY) + minSpawnY;
-                  if (this.y > maxSpawnY) this.y = maxSpawnY;
-                  if (this.y < minSpawnY) this.y = minSpawnY;
-                // -------------------------
+                const groundPlayerY = CANVAS_HEIGHT - GROUND_HEIGHT;
+                const minHeightAboveGround = 160 + PLAYER_HEIGHT;
+                const maxSpawnY = groundPlayerY - minHeightAboveGround - this.height;
+                const minSpawnY = 50;
+                this.y = Math.random() * (maxSpawnY - minSpawnY) + minSpawnY;
+                 if (this.y > maxSpawnY) this.y = maxSpawnY;
+                 if (this.y < minSpawnY) this.y = minSpawnY;
                 this.baseY = this.y;
             }
         }
@@ -412,11 +383,7 @@ window.addEventListener('load', function() {
     }
 
     // --- FONCTIONS DE GESTION DU JEU ---
-    function initMenu() { /* ... (inchangé) ... */ }
-    function startGame() { /* ... (inchangé) ... */ }
-    function endGame() { /* ... (inchangé) ... */ }
-     // --- (Copier initMenu, startGame, endGame de V3.2 ici) ---
-     function initMenu() {
+    function initMenu() {
         gameState = 'menu';
         menuElement.style.display = 'flex';
         gameOverScreenElement.style.display = 'none';
@@ -424,9 +391,10 @@ window.addEventListener('load', function() {
         versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'none';
         powerUpTimerElement.style.display = 'none';
-        livesContainer.style.display = 'none'; // V3.2: Cacher les vies au menu
+         if(livesContainer) livesContainer.style.display = 'none';
         if (adminButton) adminButton.style.display = 'block';
     }
+
     function startGame() {
         gameState = 'playing';
         menuElement.style.display = 'none';
@@ -435,10 +403,10 @@ window.addEventListener('load', function() {
         versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'block';
         powerUpTimerElement.style.display = 'block';
-        livesContainer.style.display = 'flex'; // V3.2: Afficher les vies
+        if(livesContainer) livesContainer.style.display = 'flex';
         if (adminButton) adminButton.style.display = 'none';
         score = 0;
-        lives = INITIAL_LIVES; // V3.2: Réinitialiser les vies
+        lives = INITIAL_LIVES;
         gameSpeed = BASE_GAME_SPEED;
         frameCount = 0;
         obstacles = []; collectibles = []; powerUps = []; particles = [];
@@ -448,17 +416,25 @@ window.addEventListener('load', function() {
         canSpawnPowerUp = false;
         scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL;
         resetPowerUp();
-        updateLivesDisplay(); // V3.2: Mettre à jour l'affichage initial des vies
+        updateLivesDisplay();
         player = new Player();
         backgroundHeads = [];
         for(let i = 0; i < 10; i++) { backgroundHeads.push(new BackgroundHead()); }
         if (currentMusic) { currentMusic.pause(); currentMusic.currentTime = 0; }
         currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
         currentMusic.loop = true; currentMusic.volume = 0.5;
-        currentMusic.play().catch(e => console.log("L'audio n'a pas pu démarrer:", e));
+        // Tenter de jouer la musique, gérer l'erreur si bloqué par le navigateur
+        let playPromise = currentMusic.play();
+        if (playPromise !== undefined) {
+             playPromise.catch(error => {
+                 console.log("Lecture audio bloquée initialement. L'interaction utilisateur devrait la débloquer.", error);
+                 // On pourrait ajouter un message ou un bouton pour que l'utilisateur active le son
+             });
+         }
         updateGame();
     }
-     function endGame() {
+
+    function endGame() {
         gameState = 'gameOver';
         if (currentMusic) { currentMusic.pause(); }
         gameOverScreenElement.style.display = 'flex';
@@ -470,31 +446,32 @@ window.addEventListener('load', function() {
 
     // Fonction affichage vies
     function updateLivesDisplay() {
-        livesContainer.innerHTML = ''; // Toujours vider
+        if (!livesContainer) return;
+        livesContainer.innerHTML = '';
         if (assets.coeur && assets.coeur.complete) {
-            for (let i = 0; i < lives; i++) { // Afficher le nombre actuel de vies
+            for (let i = 0; i < INITIAL_LIVES; i++) { // Créer 3 emplacements
                 const heartImg = document.createElement('img');
                 heartImg.src = assets.coeur.src;
                 heartImg.alt = 'Vie';
+                // Masquer les coeurs perdus plutôt que de ne pas les créer
+                heartImg.style.visibility = (i < lives) ? 'visible' : 'hidden';
                 livesContainer.appendChild(heartImg);
             }
         }
     }
 
-    // --- V3.3: Fonction pour le flash blanc ---
+
+    // Fonction flash V3.3
     function triggerFlash() {
         if (!flashOverlay) return;
         flashOverlay.classList.add('active');
         setTimeout(() => {
             flashOverlay.classList.remove('active');
-        }, 150); // Durée du flash (150ms)
+        }, 150);
     }
 
     // --- FONCTIONS DE MISE À JOUR (Handle) ---
-    function handleBackground() { /* ... (inchangé) ... */ }
-    function handleSpawners() { /* ... (inchangé) ... */ }
-     // --- (Copier handleBackground et handleSpawners de V3.2 ici) ---
-     function handleBackground() {
+    function handleBackground() {
         if(assets.background && assets.background.complete) {
              ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         } else {
@@ -505,7 +482,8 @@ window.addEventListener('load', function() {
         ctx.fillStyle = '#666';
         ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
     }
-     function handleSpawners() {
+
+    function handleSpawners() {
         obstacleTimer--;
         if (obstacleTimer <= 0) {
             obstacles.push(new Obstacle());
@@ -536,58 +514,56 @@ window.addEventListener('load', function() {
         }
     }
 
-    // --- V3.3: handleEntities modifié pour flash et animation coeur ---
+    // handleEntities V3.3
     function handleEntities() {
         particles.forEach((p, index) => { p.update(); p.draw(); if (p.life <= 0) particles.splice(index, 1); });
-        if (player) { // Vérifier si player existe
+        if (player) {
              player.update();
              player.draw();
         }
 
         obstacles.forEach((obstacle, index) => {
-            if (!obstacle) return; // Sécurité
+            if (!obstacle) return;
             obstacle.update();
             obstacle.draw();
 
             if (player && checkCollision(player.getHitbox(), obstacle.getHitbox())) {
                 if (activePowerUpType !== 'invincible') {
-                    triggerFlash(); // V3.3: Déclencher le flash
+                    triggerFlash();
                     lives--;
 
-                    // V3.3: Animer le dernier coeur visible
-                    const heartElements = livesContainer.querySelectorAll('img:not(.falling-heart)');
-                    if (heartElements.length > 0) {
-                        const lastHeart = heartElements[heartElements.length - 1];
-                        lastHeart.classList.add('falling-heart');
-                        // Supprimer l'élément après l'animation (800ms + petit délai)
-                        setTimeout(() => {
-                            if (lastHeart.parentNode) { // Vérifier s'il est toujours là
-                                lastHeart.parentNode.removeChild(lastHeart);
-                            }
-                        }, 900);
+                    // Animer le coeur correspondant
+                    const heartElements = livesContainer.querySelectorAll('img');
+                    if (heartElements.length > lives && lives >= 0) { // S'il y a un coeur à animer
+                        const heartToRemove = heartElements[lives]; // L'index correspond au nombre de vies restantes
+                        if (!heartToRemove.classList.contains('falling-heart')) { // Eviter double animation
+                             heartToRemove.classList.add('falling-heart');
+                             heartToRemove.style.visibility = 'visible'; // Assurer qu'il est visible pour l'anim
+                             setTimeout(() => {
+                                 heartToRemove.style.visibility = 'hidden'; // Cacher après anim
+                                 heartToRemove.classList.remove('falling-heart'); // Prêt pour prochaine fois
+                             }, 800); // Durée de l'animation CSS
+                        }
                     }
-                    // updateLivesDisplay(); // On ne met plus à jour ici directement
+                    // updateLivesDisplay(); // Remplacé par l'animation
 
                     obstacles.splice(index, 1);
                     if (lives <= 0) {
                         endGame();
                     }
                 }
-            } else if (obstacle.x + obstacle.width < (player ? player.x : 0) && !obstacle.passed) { // Vérifier player
+            } else if (obstacle.x + obstacle.width < (player ? player.x : 0) && !obstacle.passed) {
                 score++;
                 obstacle.passed = true;
             }
 
-            if (obstacle.x < -obstacle.width && (!player || !checkCollision(player.getHitbox(), obstacle.getHitbox()))) { // Vérifier player
+            if (obstacle.x < -obstacle.width && (!player || !checkCollision(player.getHitbox(), obstacle.getHitbox()))) {
                  obstacles.splice(index, 1);
             }
         });
 
-        collectibles.forEach((collectible, index) => { /* ... (inchangé) ... */ });
-        powerUps.forEach((powerUp, index) => { /* ... (inchangé) ... */ });
-         // --- (Copier Collectibles et Powerups forEach de V3.2 ici) ---
-         collectibles.forEach((collectible, index) => {
-            if (!collectible) return; // Sécurité
+        collectibles.forEach((collectible, index) => {
+             if (!collectible) return;
             collectible.update();
             collectible.draw();
             if (player && checkCollision(player.getHitbox(), collectible.getHitbox())) {
@@ -598,7 +574,7 @@ window.addEventListener('load', function() {
             if (collectible.x < -collectible.width) { collectibles.splice(index, 1); }
         });
         powerUps.forEach((powerUp, index) => {
-             if (!powerUp) return; // Sécurité
+              if (!powerUp) return;
             powerUp.update();
             powerUp.draw();
             if (player && checkCollision(player.getHitbox(), powerUp.getHitbox())) { activatePowerUp(powerUp.type); powerUps.splice(index, 1); }
@@ -648,27 +624,24 @@ window.addEventListener('load', function() {
         if (type === 'superjump') text = 'SUPER SAUT !';
         if (type === 'magnet') text = 'AIMANT !';
         powerUpTextElement.innerText = text; powerUpTextElement.style.opacity = 1;
-        setTimeout(() => { powerUpTextElement.style.opacity = 0; }, 2000);
-        for(let i=0; i<30; i++) { particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'gold')); }
+        setTimeout(() => { if (powerUpTextElement) powerUpTextElement.style.opacity = 0; }, 2000);
+        for(let i=0; i<30; i++) { if (player) particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, 'gold')); }
     }
       function resetPowerUp() {
         isPowerUpActive = false; activePowerUpType = null; powerUpTimer = 0;
-        powerUpTextElement.innerText = ''; powerUpTimerElement.innerText = '';
+        if (powerUpTextElement) powerUpTextElement.innerText = '';
+        if (powerUpTimerElement) powerUpTimerElement.innerText = '';
     }
 
     // --- UTILITAIRES ---
-    function checkCollision(rect1, rect2) { /* ... (inchangé) ... */ }
-     // --- (Copier checkCollision de V3 ici) ---
-     function checkCollision(rect1, rect2) {
-         if (!rect1 || !rect2) return false; // Sécurité
+    function checkCollision(rect1, rect2) {
+         if (!rect1 || !rect2) return false;
         return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
                rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
     }
 
     // --- BOUCLE DE JEU PRINCIPALE ---
-    function updateGame() { /* ... (inchangé) ... */ }
-     // --- (Copier updateGame de V3.2 ici) ---
-     function updateGame() {
+    function updateGame() {
         if (gameState !== 'playing') return;
         requestAnimationFrame(updateGame);
         frameCount++;
@@ -678,43 +651,35 @@ window.addEventListener('load', function() {
         handleEntities(); // Modifié V3.3
         handleSpawners();
         handlePowerUps();
-        scoreElement.innerText = `Score: ${score}`;
-        gameSpeed += GAME_ACCELERATION; // Utilise l'accélération de V3
+        if (scoreElement) scoreElement.innerText = `Score: ${score}`;
+        gameSpeed += GAME_ACCELERATION;
     }
 
-
     // --- GESTION DES CONTRÔLES ---
-    function handleInput(event) { /* ... (inchangé) ... */ }
-    gameContainer.addEventListener('mousedown', handleInput);
-    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
-     // --- (Copier handleInput et ses listeners de V3 ici) ---
-      function handleInput(event) {
+     function handleInput(event) {
         event.preventDefault();
         switch (gameState) {
             case 'menu': startGame(); break;
-            case 'playing': if (player) player.jump(); break; // Check player
+            case 'playing': if (player) player.jump(); break;
             case 'gameOver': initMenu(); break;
         }
     }
-    gameContainer.addEventListener('mousedown', handleInput);
-    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
-
+    if (gameContainer) {
+        gameContainer.addEventListener('mousedown', handleInput);
+        gameContainer.addEventListener('touchstart', handleInput, { passive: false });
+    }
 
     // Bouton Admin
-    adminButton.addEventListener('click', (e) => { /* ... (inchangé) ... */ });
-    function stopEventPropagation(e) { /* ... (inchangé) ... */ }
-    adminButton.addEventListener('mousedown', stopEventPropagation);
-    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
-     // --- (Copier les listeners du bouton Admin de V3 ici) ---
-      adminButton.addEventListener('click', (e) => {
-        const password = prompt("Mot de passe Admin :");
-        if (password === "corentin") { window.open('admin.html', '_blank'); } // Garder la référence à admin.html
-        else if (password) { alert("Mauvais mot de passe."); }
-    });
-      function stopEventPropagation(e) { e.stopPropagation(); }
-    adminButton.addEventListener('mousedown', stopEventPropagation);
-    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
-
+    if (adminButton) {
+        adminButton.addEventListener('click', (e) => {
+            const password = prompt("Mot de passe Admin :");
+            if (password === "corentin") { window.open('admin.html', '_blank'); }
+            else if (password) { alert("Mauvais mot de passe."); }
+        });
+        function stopEventPropagation(e) { e.stopPropagation(); }
+        adminButton.addEventListener('mousedown', stopEventPropagation);
+        adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
+    }
 
     // Démarrer le chargement
     loadAssets();
