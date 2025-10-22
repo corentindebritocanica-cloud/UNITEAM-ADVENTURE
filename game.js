@@ -1,9 +1,9 @@
 // Attendre que le DOM soit chargé
 window.addEventListener('load', function() {
 
-    // Éléments du DOM
+    // Vérification initiale des éléments essentiels
     const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
     const gameContainer = document.getElementById('game-container');
     const scoreElement = document.getElementById('score');
     const versionElement = document.getElementById('version');
@@ -16,6 +16,13 @@ window.addEventListener('load', function() {
     const adminButton = document.getElementById('adminButton');
     const livesContainer = document.getElementById('lives-container');
     const flashOverlay = document.getElementById('flash-overlay');
+
+    if (!canvas || !ctx || !gameContainer || !scoreElement || !versionElement || !powerUpTextElement || !powerUpTimerElement || !loadingTextElement || !menuElement || !gameOverScreenElement || !finalScoreElement || !adminButton || !livesContainer || !flashOverlay) {
+        console.error("Un ou plusieurs éléments UI essentiels sont manquants ! Vérifiez les IDs dans index.html.");
+        if(loadingTextElement) loadingTextElement.innerText = "ERREUR: INTERFACE INCOMPLETE";
+        alert("Erreur critique: L'interface du jeu n'a pas pu être initialisée correctement.");
+        return; // Arrêter l'exécution
+    }
 
     // Dimensions du Canvas
     let CANVAS_WIDTH, CANVAS_HEIGHT;
@@ -47,7 +54,7 @@ window.addEventListener('load', function() {
     let canSpawnPowerUp = false; let scoreAtLastPowerUp = 0;
     let currentMusic = null; const musicTracks = []; const assets = {};
 
-    // Ressources
+    // Ressources (noms en minuscules pour compatibilité)
     const assetSources = {
         logo: 'uniteamadventure.png', background: 'FOND DE PLAN.jpg',
         ...Array.from({length: 18}, (_, i) => ({[`perso${i+1}`]: `perso${i+1}.png`})).reduce((a, b) => ({...a, ...b}), {}),
@@ -61,32 +68,44 @@ window.addEventListener('load', function() {
     function loadAssets() {
         for (const key in assetSources) {
             const src = assetSources[key];
-            if (src.endsWith('.png') || src.endsWith('.jpg')) {
-                assets[key] = new Image();
-                assets[key].onload = assetLoaded;
-                assets[key].onerror = function() { assetFailedToLoad(key, src); };
-            } else if (src.endsWith('.mp3')) {
-                assets[key] = new Audio();
-                if (key.startsWith('music')) { musicTracks.push(assets[key]); }
-                assetLoaded();
+            try { // Ajouter un try...catch pour plus de détails si une source est invalide
+                if (src.endsWith('.png') || src.endsWith('.jpg')) {
+                    assets[key] = new Image();
+                    assets[key].onload = assetLoaded;
+                    assets[key].onerror = function() { assetFailedToLoad(key, src); };
+                    assets[key].src = src; // Définir src ici
+                } else if (src.endsWith('.mp3')) {
+                    assets[key] = new Audio();
+                     // Preload 'metadata' pour que le navigateur connaisse la durée, etc. sans charger tout le fichier
+                     assets[key].preload = 'metadata';
+                    if (key.startsWith('music')) { musicTracks.push(assets[key]); }
+                    assets[key].src = src; // Définir src ici aussi
+                    // Pour l'audio, on ne peut pas vraiment attendre 'onload' de manière fiable pour le début
+                    // On compte comme chargé, mais on gérera les erreurs de lecture plus tard.
+                    assetLoaded();
+                } else {
+                     console.warn(`Type de fichier non reconnu pour ${key}: ${src}`);
+                     assetLoaded(); // Compter quand même pour ne pas bloquer
+                }
+            } catch (error) {
+                 console.error(`Erreur lors de la création de l'asset ${key} (${src}): `, error);
+                 assetFailedToLoad(key, `${src} (Erreur JS)`); // Signaler comme échec
             }
-            if (assets[key]) { assets[key].src = src; }
-            else if (!src.endsWith('.mp3')) { console.warn(`Asset key ${key} init issue.`); }
         }
     }
     function assetLoaded() {
         assetsLoaded++;
-        if (loadingTextElement) { loadingTextElement.innerText = `Chargement... (${Math.round((assetsLoaded / totalAssets) * 100)}%)`; }
+        loadingTextElement.innerText = `Chargement... (${Math.round((assetsLoaded / totalAssets) * 100)}%)`;
         if (assetsLoaded === totalAssets) {
-             if (loadingTextElement) loadingTextElement.style.display = 'none';
+            loadingTextElement.style.display = 'none';
             initMenu();
         }
     }
      function assetFailedToLoad(key, src) {
         console.error(`Échec chargement asset: ${key} (${src})`);
-         if (loadingTextElement) loadingTextElement.innerText = `ERREUR CHARGEMENT`;
+        loadingTextElement.innerText = `ERREUR CHARGEMENT`;
         alert(`ERREUR : Impossible de charger "${src}". Vérifiez nom/présence.`);
-        throw new Error("Échec chargement asset.");
+        gameState = 'error'; // Bloquer le jeu
     }
 
     // --- CLASSES DU JEU (UNE SEULE DEFINITION PAR CLASSE) ---
@@ -124,7 +143,7 @@ window.addEventListener('load', function() {
     class Obstacle {
         constructor() {
             const i = Math.floor(Math.random() * 4) + 1; this.image = assets[`cactus${i}`];
-            const ratio = this.image.height / this.image.width;
+            const ratio = (this.image && this.image.height && this.image.width) ? this.image.height / this.image.width : 1;
             this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10); this.height = this.width * ratio;
             this.x = CANVAS_WIDTH; this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
             this.passed = false; this.isMobile = Math.random() < 0.1;
@@ -190,7 +209,7 @@ window.addEventListener('load', function() {
     class BackgroundHead {
         constructor() {
             const i = Math.floor(Math.random() * 18) + 1; this.image = assets[`perso${i}`]; this.scale = Math.random() * 0.3 + 0.2;
-            this.width = (this.image.width || 50) * this.scale; this.height = (this.image.height || 50) * this.scale;
+            this.width = (this.image?.width || 50) * this.scale; this.height = (this.image?.height || 50) * this.scale;
             this.speed = BASE_GAME_SPEED * (this.scale * 0.5); this.alpha = this.scale * 1.5;
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
             const pgy = CANVAS_HEIGHT - GROUND_HEIGHT; const minH = 160 + PLAYER_HEIGHT;
@@ -224,17 +243,18 @@ window.addEventListener('load', function() {
         menuElement.style.display = 'flex'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'none'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'none'; powerUpTimerElement.style.display = 'none';
-        if(livesContainer) livesContainer.style.display = 'none';
-        if (adminButton) adminButton.style.display = 'block';
+        livesContainer.style.display = 'none';
+        adminButton.style.display = 'block';
     }
 
     function startGame() {
+        if (!ctx) { console.error("Canvas non prêt."); return; }
         gameState = 'playing';
         menuElement.style.display = 'none'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'block'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'block'; powerUpTimerElement.style.display = 'block';
-        if(livesContainer) livesContainer.style.display = 'flex';
-        if (adminButton) adminButton.style.display = 'none';
+        livesContainer.style.display = 'flex';
+        adminButton.style.display = 'none';
         score = 0; lives = INITIAL_LIVES; gameSpeed = BASE_GAME_SPEED; frameCount = 0;
         obstacles = []; collectibles = []; powerUps = []; particles = [];
         obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL; collectibleTimer = 200; rainTimer = 30 * 60;
@@ -244,10 +264,12 @@ window.addEventListener('load', function() {
         backgroundHeads = [];
         for(let i = 0; i < 10; i++) { backgroundHeads.push(new BackgroundHead()); }
         if (currentMusic) { currentMusic.pause(); currentMusic.currentTime = 0; }
-        currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
-        currentMusic.loop = true; currentMusic.volume = 0.5;
-        let playPromise = currentMusic.play();
-        if (playPromise !== undefined) { playPromise.catch(e => { console.log("Audio bloqué.", e); }); }
+        if (musicTracks.length > 0) {
+            currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
+            currentMusic.loop = true; currentMusic.volume = 0.5;
+            let playPromise = currentMusic.play();
+            if (playPromise !== undefined) { playPromise.catch(e => { console.log("Audio bloqué.", e); }); }
+        } else { console.warn("Aucune piste musicale."); }
         updateGame();
     }
 
@@ -260,9 +282,8 @@ window.addEventListener('load', function() {
         resetPowerUp();
     }
 
-    // Fonction affichage vies V3.5 (simple)
+    // Fonction affichage vies V3.5
     function updateLivesDisplay() {
-        if (!livesContainer) return;
         livesContainer.innerHTML = '';
         if (assets.coeur && assets.coeur.complete) {
             for (let i = 0; i < lives; i++) {
@@ -275,7 +296,6 @@ window.addEventListener('load', function() {
 
     // Fonction flash V3.3
     function triggerFlash() {
-        if (!flashOverlay) return;
         flashOverlay.classList.add('active');
         setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
     }
@@ -311,7 +331,7 @@ window.addEventListener('load', function() {
         }
     }
 
-    // handleEntities V3.5 (simple perte de vie)
+    // handleEntities V3.5
     function handleEntities() {
         particles.forEach((p, index) => { p.update(); p.draw(); if (p.life <= 0) particles.splice(index, 1); });
         if (player) { player.update(); player.draw(); }
@@ -321,7 +341,7 @@ window.addEventListener('load', function() {
             obstacle.update(); obstacle.draw();
             if (player && checkCollision(player.getHitbox(), obstacle.getHitbox())) {
                 if (activePowerUpType !== 'invincible') {
-                    triggerFlash(); lives--; updateLivesDisplay(); // MAJ simple
+                    triggerFlash(); lives--; updateLivesDisplay();
                     obstacles.splice(index, 1);
                     if (lives <= 0) { endGame(); }
                 }
@@ -335,7 +355,7 @@ window.addEventListener('load', function() {
              if (!c) return; c.update(); c.draw();
             if (player && checkCollision(player.getHitbox(), c.getHitbox())) {
                 score += 10;
-                for(let i=0; i<10; i++) { particles.push(new Particle(player.x+player.width/2, player.y+player.height/2, 'standard')); }
+                for(let i=0; i<10; i++) { if(player) particles.push(new Particle(player.x+player.width/2, player.y+player.height/2, 'standard')); }
                 collectibles.splice(index, 1);
             }
             if (c.x < -c.width) { collectibles.splice(index, 1); }
@@ -399,7 +419,7 @@ window.addEventListener('load', function() {
 
     // --- BOUCLE DE JEU PRINCIPALE ---
     function updateGame() {
-        if (gameState !== 'playing') return;
+        if (gameState !== 'playing' || !ctx) return;
         requestAnimationFrame(updateGame);
         frameCount++;
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
