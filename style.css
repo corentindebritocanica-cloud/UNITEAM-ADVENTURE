@@ -38,13 +38,12 @@ html, body {
 /* Écrans de début et de fin */
 #startScreen, #gameOverScreen {
     position: absolute;
-    /* --- Modifications pour centrage et largeur --- */
     left: 50%;            /* Centre horizontalement */
-    transform: translateX(-50%); /* Ajuste pour centrer parfaitement */
+    top: 50%;             /* Centre verticalement */
+    transform: translate(-50%, -50%); /* Ajuste pour centrer parfaitement */
     width: 90%;           /* Prend 90% de la largeur disponible */
-    /* --- Fin Modifications --- */
     max-width: 400px;     /* Mais pas plus de 400px */
-    padding: 20px;
+    padding: 15px;        /* Padding réduit */
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: 10px;
     text-align: center;
@@ -53,7 +52,8 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center; /* Centre les éléments enfants */
-    gap: 10px;
+    gap: 8px;           /* Espace réduit */
+    box-sizing: border-box;
 }
 
 #gameOverScreen {
@@ -62,31 +62,41 @@ html, body {
 
 #gameOverScreen h1 {
     color: #dc3545;
+    font-size: 1.8em; /* Ajuster si nécessaire */
 }
 
 /* S'assure que les éléments internes ne dépassent pas */
 #startScreen > *, #gameOverScreen > * {
     max-width: 100%;
+    box-sizing: border-box;
 }
 
 #logo {
-    /* max-width: 80%; */ /* Remplacé par la règle générale ci-dessus */
-    margin-bottom: 20px;
-    width: auto; /* Permet au max-width de fonctionner correctement */
-    height: auto; /* Garder les proportions */
-    max-height: 150px; /* Limiter la hauteur du logo */
+    max-width: 70%;     /* Un peu plus petit */
+    margin-bottom: 10px;/* Moins d'espace */
+    height: auto;
+    max-height: 120px;  /* Limiter hauteur */
 }
+
+/* Réduire la taille du titre principal */
+#startScreen h1 {
+    font-size: 1.5em; /* Plus petit */
+    margin-bottom: 5px; /* Moins d'espace en dessous */
+    color: #333; /* Rendre lisible sur fond blanc */
+}
+
 
 #loadingText {
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 10px;
+    color: #333; /* Rendre lisible sur fond blanc */
 }
 
-#powerup-info {
-    margin-top: 15px; /* Réduit l'espace */
-    width: 100%; /* Prend toute la largeur dispo dans le conteneur */
-    text-align: left; /* Aligner le contenu interne à gauche */
+#powerup-info { /* Renommé depuis #powerUpExplanation */
+    margin-top: 10px;
+    width: 100%;
+    text-align: left;
 }
 #powerup-info h3 {
     text-align: center;
@@ -98,10 +108,11 @@ html, body {
      display: flex;
      align-items: center;
      margin-bottom: 5px;
-     justify-content: center; /* Centrer l'icône et le texte ensemble */
+     justify-content: center;
 }
-#powerup-info img {
+#powerup-info img { /* Cible les images dans #powerup-info */
     width: 30px;
+    height: auto; /* Garder proportions */
     vertical-align: middle;
     margin-right: 10px;
 }
@@ -112,14 +123,16 @@ html, body {
 
 
 #adminButton {
+    /* Garder position absolue mais par rapport au #startScreen */
     position: absolute;
     bottom: 10px;
     right: 10px;
-    padding: 5px;
-    font-size: 12px;
+    padding: 5px 8px; /* Ajuster padding */
+    font-size: 0.8em; /* Ajuster taille police */
     background: #555;
     color: white;
     border: 1px solid #fff;
+    border-radius: 4px; /* Ajouter radius */
     cursor: pointer;
 }
 
@@ -132,6 +145,7 @@ html, body {
     text-shadow: 2px 2px 4px #000;
     padding: 10px;
     user-select: none; /* Empêche la sélection de texte */
+    z-index: 10; /* Assurer qu'ils sont au-dessus du canvas */
 }
 
 #score {
@@ -220,17 +234,17 @@ html, body {
 
 /* --- Style Input Nom --- */
 .player-name-input {
-    margin: 15px 0;
+    margin: 10px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
-    width: 90%; /* Prend 90% de #startScreen */
+    width: 90%;
     max-width: 250px;
 }
 .player-name-input label {
     font-size: 0.9em;
-    color: #333; /* Plus lisible sur fond blanc */
+    color: #333;
 }
 #playerNameInput {
     padding: 8px;
@@ -243,8 +257,8 @@ html, body {
 
 /* --- Style Classement --- */
 #leaderboard {
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 15px; /* Réduit espace */
+    padding-top: 10px; /* Réduit espace */
     border-top: 1px solid #ccc;
     width: 100%;
     max-height: 150px;
@@ -253,8 +267,9 @@ html, body {
 }
 #leaderboard h3 {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px; /* Réduit espace */
     color: #333;
+    font-size: 1em; /* Ajuster si nécessaire */
 }
 #leaderboardList {
     list-style-position: inside;
@@ -262,15 +277,15 @@ html, body {
     color: #555;
 }
 #leaderboardList li {
-    margin-bottom: 5px;
-    font-size: 0.9em;
+    margin-bottom: 4px; /* Réduit espace */
+    font-size: 0.85em; /* Un peu plus petit */
     white-space: nowrap;
 }
 #leaderboardList li strong {
     display: inline-block;
-    min-width: 50px;
+    min-width: 40px; /* Réduit espace score */
     text-align: right;
-    margin-left: 10px;
+    margin-left: 8px; /* Réduit espace */
     color: #000;
 }
 /* --- Fin Style Classement --- */
