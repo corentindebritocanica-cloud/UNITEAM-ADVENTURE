@@ -153,3 +153,41 @@ html, body {
     filter: drop-shadow(2px 2px 2px #000); /* Ombre portée */
 }
 /* --- Fin Ajouts V3.2 --- */
+/* --- Ajouts V3.3 --- */
+
+/* Superposition pour le flash blanc */
+#flash-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    opacity: 0; /* Invisible par défaut */
+    pointer-events: none; /* Ne bloque pas les clics */
+    z-index: 50; /* Au-dessus de tout */
+    transition: opacity 0.1s ease-out; /* Transition rapide */
+}
+
+#flash-overlay.active {
+    opacity: 0.7; /* Opacité du flash */
+}
+
+/* Animation pour le coeur qui tombe */
+#lives-container img.falling-heart {
+    animation: fallAndFade 0.8s ease-in forwards;
+    position: relative; /* Nécessaire pour l'animation */
+}
+
+@keyframes fallAndFade {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100px); /* Tombe de 100px */
+        opacity: 0;
+    }
+}
+/* --- Fin Ajouts V3.3 --- */
+
