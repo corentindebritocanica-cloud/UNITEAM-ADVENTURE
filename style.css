@@ -1,174 +1,84 @@
-/* Réinitialisation de base */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
-
-html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden; /* Empêche le défilement sur mobile */
-    background-color: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Conteneur principal du jeu (aspect mobile portrait) */
-#game-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    max-width: 450px; /* Limite la largeur sur bureau */
-    max-height: 800px; /* Limite la hauteur sur bureau */
-    background-color: #333;
-    overflow: hidden;
-    border: 2px solid #fff;
-}
-
-#gameCanvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background-color: #000; /* Fond noir si le dessin échoue */
-}
-
-/* Écrans de superposition (Menu, Game Over, Chargement) */
-.screen {
+/* Modifie la règle existante pour .screen ou #gameOverScreen */
+#gameOverScreen.game-over-blur { /* Utiliser la nouvelle classe pour spécificité */
     position: absolute;
-    top: 0;
-    left: 0;
+    left: 0; /* Prend toute la largeur */
+    top: 0;  /* Prend toute la hauteur */
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
+    transform: none; /* Annuler le centrage précédent */
+    max-width: none; /* Annuler la limite de largeur */
+    background-color: rgba(0, 0, 0, 0.3); /* Fond semi-transparent NÉCESSAIRE pour backdrop-filter */
+    backdrop-filter: blur(5px); /* Effet de flou sur l'arrière-plan */
+    -webkit-backdrop-filter: blur(5px); /* Pour compatibilité Safari */
+    padding: 20px;
+    border-radius: 0; /* Pas de coins arrondis en plein écran */
+    border: none; /* Pas de bordure */
+    z-index: 20;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
+    justify-content: center; /* Centrer le contenu verticalement */
+    align-items: center; /* Centrer le contenu horizontalement */
+    gap: 20px; /* Espace entre "Game Over", score et bouton */
+    box-sizing: border-box;
 }
 
-#logo {
-    max-width: 80%;
-    margin-bottom: 20px;
+/* Styles pour le contenu de l'écran Game Over */
+#gameOverScreen h1 {
+    color: #FF4136; /* Rouge plus vif */
+    font-size: 3em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
-#powerup-info {
-    margin-top: 30px;
-}
-#powerup-info img {
-    width: 30px;
-    vertical-align: middle;
-    margin-right: 10px;
-}
-
-#adminButton {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    padding: 5px;
-    font-size: 12px;
-    background: #555;
+#gameOverScreen h2 {
     color: white;
-    border: 1px solid #fff;
-    cursor: pointer;
+    font-size: 2em;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 }
 
-/* UI en jeu */
-#score, #version, #powerUpText, #powerUpTimer {
-    position: absolute;
-    color: white;
-    font-size: 24px;
+/* Style pour le nouveau bouton Recommencer */
+#restartButton {
+    padding: 12px 25px;
+    font-size: 1.2em;
     font-weight: bold;
-    text-shadow: 2px 2px 4px #000;
-    padding: 10px;
-    user-select: none; /* Empêche la sélection de texte */
+    color: white;
+    background-color: #007bff; /* Bleu */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-#score {
-    top: 0;
-    left: 0;
+#restartButton:hover, #restartButton:focus {
+    background-color: #0056b3; /* Bleu plus foncé au survol/focus */
+    outline: none; /* Enlever l'outline par défaut */
 }
 
-#version {
-    top: 0;
-    right: 0;
-    font-size: 16px;
-    padding-right: 10px;
+#restartButton:active {
+     background-color: #004085; /* Bleu encore plus foncé au clic */
+     transform: translateY(1px); /* Effet d'enfoncement */
+     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
 
-#powerUpText {
-    top: 40px;
-    left: 0;
-    font-size: 20px;
-    color: #FFD700; /* Or */
+/* Assurer que l'écran de chargement garde son fond opaque */
+#loadingText.screen {
+     background-color: rgba(0, 0, 0, 0.7);
+     backdrop-filter: none; /* Pas de flou */
+     -webkit-backdrop-filter: none;
+     /* Garder les autres styles de .screen si nécessaire */
+     left: 50%; top: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px;
+     padding: 15px; border-radius: 10px; border: 2px solid #333; gap: 8px;
 }
-
-#powerUpTimer {
-    top: 70px;
-    left: 0;
-    font-size: 18px;
-    color: #FFD700;
+/* Assurer que le menu garde son fond opaque */
+#menu.screen {
+     background-color: rgba(255, 255, 255, 0.9);
+     backdrop-filter: none; /* Pas de flou */
+     -webkit-backdrop-filter: none;
+     color: #333; /* Texte sombre sur fond clair */
+     /* Garder les styles de centrage et taille de .screen */
+     left: 50%; top: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px;
+     padding: 15px; border-radius: 10px; border: 2px solid #333; gap: 8px;
 }
-
-/* Animation de secousse pour Game Over */
-.shake {
-    animation: shake 0.5s;
-    animation-iteration-count: 1;
+#menu h1, #menu h3, #menu label, #menu .power-up-desc {
+    color: #333; /* Assurer que le texte dans le menu est lisible */
 }
-
-@keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    10% { transform: translate(-1px, -2px) rotate(-1deg); }
-    20% { transform: translate(-3px, 0px) rotate(1deg); }
-    30% { transform: translate(3px, 2px) rotate(0deg); }
-    40% { transform: translate(1px, -1px) rotate(1deg); }
-    50% { transform: translate(-1px, 2px) rotate(-1deg); }
-    60% { transform: translate(-3px, 1px) rotate(0deg); }
-    70% { transform: translate(3px, 1px) rotate(-1deg); }
-    80% { transform: translate(-1px, -1px) rotate(1deg); }
-    90% { transform: translate(1px, 2px) rotate(0deg); }
-    100% { transform: translate(1px, -2px) rotate(-1deg); }
-}
-
-/* --- Style Vies --- */
-#lives-container {
-    position: absolute;
-    top: 10px;
-    right: 60px;
-    display: flex;
-    gap: 5px;
-    z-index: 10;
-    padding: 10px 0;
-}
-
-#lives-container img {
-    width: 30px;
-    height: auto;
-    filter: drop-shadow(2px 2px 2px #000);
-}
-/* --- Fin Style Vies --- */
-
-
-/* --- Style Flash --- */
-#flash-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 50;
-    transition: opacity 0.1s ease-out;
-}
-
-#flash-overlay.active {
-    opacity: 0.7;
-}
-/* --- Fin Style Flash --- */
