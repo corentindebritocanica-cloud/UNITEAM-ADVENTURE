@@ -27,6 +27,7 @@ window.addEventListener('load', function() {
     // Dimensions du Canvas
     let CANVAS_WIDTH, CANVAS_HEIGHT;
     function resizeCanvas() {
+        if (!gameContainer || !canvas) return; // Sécurité
         CANVAS_WIDTH = gameContainer.clientWidth;
         CANVAS_HEIGHT = gameContainer.clientHeight;
         canvas.width = CANVAS_WIDTH;
@@ -34,6 +35,7 @@ window.addEventListener('load', function() {
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+
 
     // Constantes du jeu (V3)
     const PLAYER_WIDTH = 50; const PLAYER_HEIGHT = 50; const GRAVITY = 0.8;
@@ -66,30 +68,28 @@ window.addEventListener('load', function() {
     // --- CHARGEMENT DES RESSOURCES ---
     let assetsLoaded = 0; const totalAssets = Object.keys(assetSources).length;
     function loadAssets() {
+        if (!loadingTextElement) { console.error("loadingTextElement manquant."); return; }
         for (const key in assetSources) {
             const src = assetSources[key];
-            try { // Ajouter un try...catch pour plus de détails si une source est invalide
+            try {
                 if (src.endsWith('.png') || src.endsWith('.jpg')) {
                     assets[key] = new Image();
                     assets[key].onload = assetLoaded;
                     assets[key].onerror = function() { assetFailedToLoad(key, src); };
-                    assets[key].src = src; // Définir src ici
+                    assets[key].src = src;
                 } else if (src.endsWith('.mp3')) {
                     assets[key] = new Audio();
-                     // Preload 'metadata' pour que le navigateur connaisse la durée, etc. sans charger tout le fichier
-                     assets[key].preload = 'metadata';
+                    assets[key].preload = 'metadata';
                     if (key.startsWith('music')) { musicTracks.push(assets[key]); }
-                    assets[key].src = src; // Définir src ici aussi
-                    // Pour l'audio, on ne peut pas vraiment attendre 'onload' de manière fiable pour le début
-                    // On compte comme chargé, mais on gérera les erreurs de lecture plus tard.
+                    assets[key].src = src;
                     assetLoaded();
                 } else {
-                     console.warn(`Type de fichier non reconnu pour ${key}: ${src}`);
-                     assetLoaded(); // Compter quand même pour ne pas bloquer
+                     console.warn(`Type de fichier non reconnu: ${key}: ${src}`);
+                     assetLoaded();
                 }
             } catch (error) {
-                 console.error(`Erreur lors de la création de l'asset ${key} (${src}): `, error);
-                 assetFailedToLoad(key, `${src} (Erreur JS)`); // Signaler comme échec
+                 console.error(`Erreur création asset ${key} (${src}): `, error);
+                 assetFailedToLoad(key, `${src} (Erreur JS)`);
             }
         }
     }
@@ -105,7 +105,7 @@ window.addEventListener('load', function() {
         console.error(`Échec chargement asset: ${key} (${src})`);
         loadingTextElement.innerText = `ERREUR CHARGEMENT`;
         alert(`ERREUR : Impossible de charger "${src}". Vérifiez nom/présence.`);
-        gameState = 'error'; // Bloquer le jeu
+        gameState = 'error';
     }
 
     // --- CLASSES DU JEU (UNE SEULE DEFINITION PAR CLASSE) ---
@@ -243,8 +243,7 @@ window.addEventListener('load', function() {
         menuElement.style.display = 'flex'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'none'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'none'; powerUpTimerElement.style.display = 'none';
-        livesContainer.style.display = 'none';
-        adminButton.style.display = 'block';
+        livesContainer.style.display = 'none'; adminButton.style.display = 'block';
     }
 
     function startGame() {
@@ -253,8 +252,7 @@ window.addEventListener('load', function() {
         menuElement.style.display = 'none'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'block'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'block'; powerUpTimerElement.style.display = 'block';
-        livesContainer.style.display = 'flex';
-        adminButton.style.display = 'none';
+        livesContainer.style.display = 'flex'; adminButton.style.display = 'none';
         score = 0; lives = INITIAL_LIVES; gameSpeed = BASE_GAME_SPEED; frameCount = 0;
         obstacles = []; collectibles = []; powerUps = []; particles = [];
         obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL; collectibleTimer = 200; rainTimer = 30 * 60;
@@ -424,7 +422,7 @@ window.addEventListener('load', function() {
         frameCount++;
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         handleBackground(); handleWeather(); handleEntities(); handleSpawners(); handlePowerUps();
-        if(scoreElement) scoreElement.innerText = `Score: ${score}`;
+        scoreElement.innerText = `Score: ${score}`;
         gameSpeed += GAME_ACCELERATION;
     }
 
@@ -441,22 +439,18 @@ window.addEventListener('load', function() {
             case 'gameOver': initMenu(); break;
         }
     }
-    if (gameContainer) {
-        gameContainer.addEventListener('mousedown', handleInput);
-        gameContainer.addEventListener('touchstart', handleInput, { passive: false });
-    }
+    gameContainer.addEventListener('mousedown', handleInput);
+    gameContainer.addEventListener('touchstart', handleInput, { passive: false });
 
     // Bouton Admin
-    if (adminButton) {
-        adminButton.addEventListener('click', (e) => {
-            const password = prompt("Mot de passe Admin :");
-            if (password === "corentin") { window.open('admin.html', '_blank'); }
-            else if (password) { alert("Mauvais mot de passe."); }
-        });
-        function stopEventPropagation(e) { e.stopPropagation(); }
-        adminButton.addEventListener('mousedown', stopEventPropagation);
-        adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
-    }
+    adminButton.addEventListener('click', (e) => {
+        const password = prompt("Mot de passe Admin :");
+        if (password === "corentin") { window.open('admin.html', '_blank'); } // Garder référence admin.html
+        else if (password) { alert("Mauvais mot de passe."); }
+    });
+    function stopEventPropagation(e) { e.stopPropagation(); }
+    adminButton.addEventListener('mousedown', stopEventPropagation);
+    adminButton.addEventListener('touchstart', stopEventPropagation, { passive: false });
 
     // Démarrer le chargement
     loadAssets();
