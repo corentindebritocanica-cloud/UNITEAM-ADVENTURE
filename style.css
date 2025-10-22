@@ -19,7 +19,6 @@ html, body {
 /* Conteneur principal du jeu (aspect mobile portrait) */
 #game-container {
     position: relative;
-    /* Dimensions typiques pour mobile portrait */
     width: 100vw;
     height: 100vh;
     max-width: 450px; /* Limite la largeur sur bureau */
@@ -99,7 +98,7 @@ html, body {
     top: 0;
     right: 0;
     font-size: 16px;
-    padding-right: 10px; /* Espace pour ne pas coller au bord */
+    padding-right: 10px;
 }
 
 #powerUpText {
@@ -136,26 +135,26 @@ html, body {
     100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
 
-/* --- Ajouts V3.2 --- */
+/* --- Style Vies --- */
 #lives-container {
     position: absolute;
-    top: 10px; /* Aligné verticalement avec le score/version */
-    right: 60px; /* Espace suffisant pour la version à droite */
+    top: 10px;
+    right: 60px;
     display: flex;
-    gap: 5px; /* Espace entre les coeurs */
+    gap: 5px;
     z-index: 10;
-    padding: 10px 0; /* Même padding vertical que score/version */
+    padding: 10px 0;
 }
 
 #lives-container img {
-    width: 30px; /* Taille des coeurs */
+    width: 30px;
     height: auto;
-    filter: drop-shadow(2px 2px 2px #000); /* Ombre portée */
+    filter: drop-shadow(2px 2px 2px #000);
 }
-/* --- Fin Ajouts V3.2 --- */
-/* --- Ajouts V3.3 --- */
+/* --- Fin Style Vies --- */
 
-/* Superposition pour le flash blanc */
+
+/* --- Style Flash --- */
 #flash-overlay {
     position: absolute;
     top: 0;
@@ -163,31 +162,15 @@ html, body {
     width: 100%;
     height: 100%;
     background-color: white;
-    opacity: 0; /* Invisible par défaut */
-    pointer-events: none; /* Ne bloque pas les clics */
-    z-index: 50; /* Au-dessus de tout */
-    transition: opacity 0.1s ease-out; /* Transition rapide */
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.1s ease-out;
 }
 
 #flash-overlay.active {
-    opacity: 0.7; /* Opacité du flash */
+    opacity: 0.7;
 }
+/* --- Fin Style Flash --- */
 
-/* Animation pour le coeur qui tombe */
-#lives-container img.falling-heart {
-    animation: fallAndFade 0.8s ease-in forwards;
-    position: relative; /* Nécessaire pour l'animation */
-}
-
-@keyframes fallAndFade {
-    0% {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(100px); /* Tombe de 100px */
-        opacity: 0;
-    }
-}
-/* --- Fin Ajouts V3.3 --- */
-
+/* Animation coeur supprimée en V3.5 */
