@@ -19,6 +19,7 @@ window.addEventListener('load', function() {
     const playerNameInput = document.getElementById('playerNameInput');
     const leaderboardListElement = document.getElementById('leaderboardList');
 
+
     if (!canvas || !ctx || !gameContainer || !scoreElement || !versionElement || !powerUpTextElement || !powerUpTimerElement || !loadingTextElement || !menuElement || !gameOverScreenElement || !finalScoreElement || !adminButton || !livesContainer || !flashOverlay || !playerNameInput || !leaderboardListElement) {
         console.error("Un ou plusieurs éléments UI essentiels sont manquants ! Vérifiez les IDs dans index.html.");
         if(loadingTextElement) loadingTextElement.innerText = "ERREUR: INTERFACE INCOMPLETE";
@@ -69,7 +70,11 @@ window.addEventListener('load', function() {
 
     // --- CHARGEMENT DES RESSOURCES ---
     let assetsLoaded = 0; const totalAssets = Object.keys(assetSources).length;
-    function loadAssets() {
+    function loadAssets() { /* ... (inchangé) ... */ }
+    function assetLoaded() { /* ... (inchangé) ... */ }
+    function assetFailedToLoad(key, src) { /* ... (inchangé) ... */ }
+     // --- (Copier code chargement V4.1 ici) ---
+     function loadAssets() {
         if (!loadingTextElement) { console.error("loadingTextElement manquant."); return; }
         for (const key in assetSources) {
             const src = assetSources[key];
@@ -107,8 +112,14 @@ window.addEventListener('load', function() {
     }
 
     // --- CLASSES DU JEU ---
-
-    class Player {
+    class Player { /* ... (inchangé) ... */ }
+    class Obstacle { /* ... (inchangé) ... */ }
+    class Collectible { /* ... (inchangé) ... */ }
+    class PowerUp { /* ... (inchangé) ... */ }
+    class Particle { /* ... (inchangé) ... */ }
+    class BackgroundHead { /* ... (inchangé) ... */ }
+    // --- (Copier les 6 classes V4.1 ici) ---
+     class Player {
         constructor() { this.width=PLAYER_WIDTH; this.height=PLAYER_HEIGHT; this.x=50; this.y=CANVAS_HEIGHT-GROUND_HEIGHT-this.height; this.velocityY=0; this.isGrounded=true; this.jumpCount=0; this.maxJumps=MAX_JUMPS; this.setImage(); }
         setImage() { const i=Math.floor(Math.random()*18)+1; this.image=assets[`perso${i}`]; }
         jump() { if(this.jumpCount<this.maxJumps){ let pwr=(activePowerUpType==='superjump')?JUMP_POWER*1.5:JUMP_POWER; this.velocityY=-pwr; this.isGrounded=false; this.jumpCount++; }}
@@ -116,34 +127,35 @@ window.addEventListener('load', function() {
         draw() { if(activePowerUpType==='invincible'&&frameCount%10<5){return;} if(this.image&&this.image.complete){ctx.drawImage(this.image, this.x, this.y, this.width, this.height);} }
         getHitbox() { return {x:this.x, y:this.y, width:this.width, height:this.height}; }
     }
-    class Obstacle {
+     class Obstacle {
         constructor() { const i=Math.floor(Math.random()*4)+1; this.image=assets[`cactus${i}`]; const r=(this.image&&this.image.height&&this.image.width)?this.image.height/this.image.width:1; this.width=OBSTACLE_BASE_WIDTH+(Math.random()*20-10); this.height=this.width*r; this.x=CANVAS_WIDTH; this.y=CANVAS_HEIGHT-GROUND_HEIGHT-this.height; this.passed=false; this.isMobile=Math.random()<0.1; this.verticalSpeed=(Math.random()*2+1)*(Math.random()<0.5?1:-1); this.verticalRange=15; this.baseY=this.y; }
         update() { this.x-=gameSpeed; if(this.isMobile){this.y+=this.verticalSpeed; if(this.y<this.baseY-this.verticalRange||this.y>this.baseY+this.verticalRange){this.verticalSpeed*=-1;}}}
         draw() { if(this.image&&this.image.complete){ctx.drawImage(this.image, this.x, this.y, this.width, this.height);} }
         getHitbox() { return {x:this.x+this.width*0.1, y:this.y+this.height*0.1, width:this.width*0.8, height:this.height*0.8}; }
     }
-    class Collectible {
+     class Collectible {
         constructor() { this.image=assets.note; this.width=30; this.height=30; this.x=CANVAS_WIDTH; const pgy=CANVAS_HEIGHT-GROUND_HEIGHT-PLAYER_HEIGHT; const minH=70; const maxH=120; this.y=pgy-(Math.random()*(maxH-minH)+minH); if(this.y<20)this.y=20; }
         update() { if(activePowerUpType==='magnet'&&player){ const dx=player.x-this.x; const dy=player.y-this.y; const dist=Math.sqrt(dx*dx+dy*dy); if(dist<150){this.x+=dx*0.05; this.y+=dy*0.05;}} this.x-=gameSpeed; }
         draw() { if(this.image&&this.image.complete){ctx.drawImage(this.image, this.x, this.y, this.width, this.height);} }
         getHitbox() { return {x:this.x, y:this.y, width:this.width, height:this.height}; }
     }
-    class PowerUp {
-        constructor() { const t=['invincible','superjump','magnet']; this.type=t[Math.floor(Math.random()*t.length)]; if(this.type==='invincible')this.image=assets.chapeau; else if(this.type==='superjump')this.image=assets.botte; else this.image=assets.aimant; this.width=100; this.height=(this.image&&this.image.height&&this.image.width)?(this.image.height/this.image.width)*this.width:100; this.x=CANVAS_WIDTH; const pgy=CANVAS_HEIGHT-GROUND_HEIGHT-PLAYER_HEIGHT; const minH=70; const maxH=120; this.y=pgy-(Math.random()*(maxH-minH)+minH); if(this.y<20)this.y=20; if(this.y+this.height>pgy-minH){this.y=pgy-minH-this.height;} this.baseY=this.y; this.angle=Math.random()*Math.PI*2; }
+     class PowerUp {
+        constructor() { const types=['invincible','superjump','magnet']; this.type=types[Math.floor(Math.random()*types.length)]; if(this.type==='invincible')this.image=assets.chapeau; else if(this.type==='superjump')this.image=assets.botte; else this.image=assets.aimant; this.width=100; this.height=(this.image&&this.image.height&&this.image.width)?(this.image.height/this.image.width)*this.width:100; this.x=CANVAS_WIDTH; const pgy=CANVAS_HEIGHT-GROUND_HEIGHT-PLAYER_HEIGHT; const minH=70; const maxH=120; this.y=pgy-(Math.random()*(maxH-minH)+minH); if(this.y<20)this.y=20; if(this.y+this.height>pgy-minH){this.y=pgy-minH-this.height;} this.baseY=this.y; this.angle=Math.random()*Math.PI*2; }
         update() { this.x-=gameSpeed; this.angle+=0.05; this.y=this.baseY+Math.sin(this.angle)*20; }
         draw() { if(this.image&&this.image.complete){ctx.drawImage(this.image, this.x, this.y, this.width, this.height);} }
         getHitbox() { return {x:this.x, y:this.y, width:this.width, height:this.height}; }
     }
-    class Particle {
+     class Particle {
         constructor(x,y,type){this.x=x;this.y=y;this.type=type;this.size=Math.random()*5+2;this.speedX=-Math.random()*2-1;this.speedY=Math.random()*2-1;this.gravity=0.1;this.life=100;if(type==='gold'){this.color='gold';}else{const c=['gold','white','silver'];this.color=c[Math.floor(Math.random()*c.length)];}}
         update(){this.speedY+=this.gravity;this.x+=this.speedX;this.y+=this.speedY;this.life--;}
         draw(){ctx.globalAlpha=Math.max(0,this.life/100);ctx.fillStyle=this.color;ctx.fillRect(this.x,this.y,this.size,this.size);ctx.globalAlpha=1.0;}
     }
-    class BackgroundHead {
+     class BackgroundHead {
         constructor() { const i=Math.floor(Math.random()*18)+1; this.image=assets[`perso${i}`]; this.scale=Math.random()*0.3+0.2; this.width=(this.image?.width||50)*this.scale; this.height=(this.image?.height||50)*this.scale; this.speed=BASE_GAME_SPEED*(this.scale*0.5); this.alpha=this.scale*1.5; this.x=CANVAS_WIDTH+Math.random()*CANVAS_WIDTH; const pgy=CANVAS_HEIGHT-GROUND_HEIGHT; const minH=160+PLAYER_HEIGHT; const maxSY=pgy-minH-this.height; const minSY=50; this.y=Math.random()*(maxSY-minSY)+minSY; if(this.y>maxSY)this.y=maxSY; if(this.y<minSY)this.y=minSY; this.baseY=this.y; this.angle=Math.random()*Math.PI*2; this.jumpHeight=Math.random()*20+10; }
         update() { this.speed=gameSpeed*(this.scale*0.5); this.x-=this.speed; this.angle+=0.03; this.y=this.baseY-Math.abs(Math.sin(this.angle))*this.jumpHeight; if(this.x<-this.width){ this.x=CANVAS_WIDTH; const pgy=CANVAS_HEIGHT-GROUND_HEIGHT; const minH=160+PLAYER_HEIGHT; const maxSY=pgy-minH-this.height; const minSY=50; this.y=Math.random()*(maxSY-minSY)+minSY; if(this.y>maxSY)this.y=maxSY; if(this.y<minSY)this.y=minSY; this.baseY=this.y; }}
          draw() { ctx.globalAlpha=this.alpha; ctx.filter='brightness(0) opacity(0.5)'; if(this.image&&this.image.complete){ctx.drawImage(this.image,this.x,this.y,this.width,this.height);} ctx.filter='none'; ctx.globalAlpha=1.0; }
     }
+
 
     // --- FONCTIONS DE GESTION DU JEU ---
     function initMenu() { gameState='menu'; menuElement.style.display='flex'; gameOverScreenElement.style.display='none'; scoreElement.style.display='none'; versionElement.style.display='block'; powerUpTextElement.style.display='none'; powerUpTimerElement.style.display='none'; livesContainer.style.display='none'; adminButton.style.display='block'; }
@@ -154,7 +166,7 @@ window.addEventListener('load', function() {
         if(currentMusic){currentMusic.pause(); currentMusic.currentTime=0;} if(musicTracks.length>0){currentMusic=musicTracks[Math.floor(Math.random()*musicTracks.length)]; currentMusic.loop=true; currentMusic.volume=0.5; let p=currentMusic.play(); if(p!==undefined){p.catch(e=>{console.log("Audio bloqué.",e);});}}else{console.warn("Aucune piste musicale.");}
         updateGame();
     }
-    function endGame() { if(gameState==='gameOver')return; gameState='gameOver'; if(currentMusic){currentMusic.pause();} gameOverScreenElement.style.display='flex'; finalScoreElement.innerText=`${score}`; gameContainer.classList.add('shake'); setTimeout(()=>gameContainer.classList.remove('shake'), 500); resetPowerUp(); displayLeaderboard(); }
+    async function endGame() { if(gameState==='gameOver')return; gameState='gameOver'; if(currentMusic){currentMusic.pause();} try{await submitScore(currentPlayerName,score);}catch(error){console.error("Erreur envoi score:",error);} gameOverScreenElement.style.display='flex'; finalScoreElement.innerText=`${score}`; gameContainer.classList.add('shake'); setTimeout(()=>gameContainer.classList.remove('shake'), 500); resetPowerUp(); displayLeaderboard(); }
     function updateLivesDisplay() { if(!livesContainer)return; livesContainer.innerHTML=''; if(assets.coeur&&assets.coeur.complete){for(let i=0; i<lives; i++){const h=document.createElement('img'); h.src=assets.coeur.src; h.alt='Vie'; livesContainer.appendChild(h);}}}
     function triggerFlash() { if(!flashOverlay)return; flashOverlay.classList.add('active'); setTimeout(()=>{flashOverlay.classList.remove('active');}, 150); }
 
@@ -205,8 +217,14 @@ window.addEventListener('load', function() {
         gameSpeed += GAME_ACCELERATION;
     }
 
-    // --- GESTION DES CONTRÔLES ---
+    // --- GESTION DES CONTRÔLES (Avec fix V4.2) ---
      function handleInput(event) {
+         // Ignorer les clics sur l'input ou le bouton admin
+         if (event.target === playerNameInput || event.target === adminButton) {
+             console.log("Input or Admin button clicked, ignoring for game start/jump.");
+             return;
+         }
+
         event.preventDefault();
         if (currentMusic && currentMusic.paused && gameState !== 'loading') {
              let playPromise = currentMusic.play();
