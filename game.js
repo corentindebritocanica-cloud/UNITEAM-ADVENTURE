@@ -58,11 +58,7 @@ window.addEventListener('load', function() {
 
     // --- CHARGEMENT DES RESSOURCES ---
     let assetsLoaded = 0; const totalAssets = Object.keys(assetSources).length;
-    function loadAssets() { /* ... (inchangé) ... */ }
-    function assetLoaded() { /* ... (inchangé) ... */ }
-    function assetFailedToLoad(key, src) { /* ... (inchangé) ... */ }
-     // --- (Copier le code de chargement V3.1 corrigé ici) ---
-     function loadAssets() {
+    function loadAssets() {
         for (const key in assetSources) {
             const src = assetSources[key];
             if (src.endsWith('.png') || src.endsWith('.jpg')) {
@@ -72,13 +68,10 @@ window.addEventListener('load', function() {
             } else if (src.endsWith('.mp3')) {
                 assets[key] = new Audio();
                 if (key.startsWith('music')) { musicTracks.push(assets[key]); }
-                assetLoaded(); // Compter comme chargé
+                assetLoaded();
             }
-            if (assets[key]) { // Définir .src après création
-                assets[key].src = src;
-            } else if (!src.endsWith('.mp3')) {
-                 console.warn(`Asset key ${key} was potentially not initialized correctly before setting src.`);
-            }
+            if (assets[key]) { assets[key].src = src; }
+            else if (!src.endsWith('.mp3')) { console.warn(`Asset key ${key} init issue.`); }
         }
     }
     function assetLoaded() {
@@ -90,73 +83,49 @@ window.addEventListener('load', function() {
         }
     }
      function assetFailedToLoad(key, src) {
-        console.error(`Échec du chargement de l'asset: ${key} (${src})`);
-         if (loadingTextElement) loadingTextElement.innerText = `ERREUR DE CHARGEMENT`;
-        alert(`ERREUR : Impossible de charger le fichier "${src}". Vérifiez nom/présence.`);
-        throw new Error("Échec du chargement de l'asset.");
+        console.error(`Échec chargement asset: ${key} (${src})`);
+         if (loadingTextElement) loadingTextElement.innerText = `ERREUR CHARGEMENT`;
+        alert(`ERREUR : Impossible de charger "${src}". Vérifiez nom/présence.`);
+        throw new Error("Échec chargement asset.");
     }
 
-
-    // --- CLASSES DU JEU ---
+    // --- CLASSES DU JEU (UNE SEULE DEFINITION PAR CLASSE) ---
 
     class Player {
-        constructor() { /* ... (inchangé) ... */ }
-        setImage() { /* ... (inchangé) ... */ }
-        jump() { /* ... (inchangé) ... */ }
-        update() {
-            this.velocityY += GRAVITY; this.y += this.velocityY;
-            const groundPos = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
-            if (this.y > groundPos) {
-                this.y = groundPos; this.velocityY = 0;
-                if (!this.isGrounded) { this.isGrounded = true; this.jumpCount = 0; }
-            } else { this.isGrounded = false; }
-            // --- MODIFICATION V3.5 ---
-            // Augmenter la fréquence des paillettes (toutes les frames)
-            particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
-            // -------------------------
-        }
-        draw() { /* ... (inchangé) ... */ }
-        getHitbox() { /* ... (inchangé) ... */ }
-         // --- (Copier le reste de la classe Player de V3.1 corrigé ici) ---
-         constructor() {
+        constructor() {
             this.width = PLAYER_WIDTH; this.height = PLAYER_HEIGHT;
             this.x = 50; this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
             this.velocityY = 0; this.isGrounded = true;
             this.jumpCount = 0; this.maxJumps = MAX_JUMPS;
             this.setImage();
         }
-        setImage() {
-            const i = Math.floor(Math.random() * 18) + 1;
-            this.image = assets[`perso${i}`];
-        }
+        setImage() { const i = Math.floor(Math.random() * 18) + 1; this.image = assets[`perso${i}`]; }
         jump() {
             if (this.jumpCount < this.maxJumps) {
                 let pwr = (activePowerUpType === 'superjump') ? JUMP_POWER * 1.5 : JUMP_POWER;
-                this.velocityY = -pwr;
-                this.isGrounded = false; this.jumpCount++;
+                this.velocityY = -pwr; this.isGrounded = false; this.jumpCount++;
             }
         }
-        // update() est modifiée ci-dessus
+        update() {
+            this.velocityY += GRAVITY; this.y += this.velocityY;
+            const groundPos = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
+            if (this.y > groundPos) { this.y = groundPos; this.velocityY = 0; if (!this.isGrounded) { this.isGrounded = true; this.jumpCount = 0; }}
+            else { this.isGrounded = false; }
+            // Paillettes V3.5
+            particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'standard'));
+        }
         draw() {
-            if (activePowerUpType === 'invincible' && frameCount % 10 < 5) { return; } // Clignote
+            if (activePowerUpType === 'invincible' && frameCount % 10 < 5) { return; }
             if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); }
         }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
 
-    class Obstacle { /* ... (inchangé) ... */ }
-    class Collectible { /* ... (inchangé) ... */ }
-    class PowerUp { /* ... (inchangé) ... */ }
-    class Particle { /* ... (inchangé) ... */ }
-    class BackgroundHead { /* ... (inchangé) ... */ }
-     // --- (Copier les classes Obstacle, Collectible, PowerUp, Particle, BackgroundHead de V3.1 corrigé ici) ---
-     class Obstacle {
+    class Obstacle {
         constructor() {
-            const i = Math.floor(Math.random() * 4) + 1;
-            this.image = assets[`cactus${i}`];
+            const i = Math.floor(Math.random() * 4) + 1; this.image = assets[`cactus${i}`];
             const ratio = this.image.height / this.image.width;
-            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10);
-            this.height = this.width * ratio;
+            this.width = OBSTACLE_BASE_WIDTH + (Math.random() * 20 - 10); this.height = this.width * ratio;
             this.x = CANVAS_WIDTH; this.y = CANVAS_HEIGHT - GROUND_HEIGHT - this.height;
             this.passed = false; this.isMobile = Math.random() < 0.1;
             this.verticalSpeed = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1);
@@ -164,15 +133,13 @@ window.addEventListener('load', function() {
         }
         update() {
             this.x -= gameSpeed;
-            if (this.isMobile) {
-                this.y += this.verticalSpeed;
-                if (this.y < this.baseY - this.verticalRange || this.y > this.baseY + this.verticalRange) { this.verticalSpeed *= -1; }
-            }
+            if (this.isMobile) { this.y += this.verticalSpeed; if (this.y < this.baseY - this.verticalRange || this.y > this.baseY + this.verticalRange) { this.verticalSpeed *= -1; } }
         }
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x + this.width*0.1, y: this.y + this.height*0.1, width: this.width*0.8, height: this.height*0.8 }; }
     }
-     class Collectible {
+
+    class Collectible {
         constructor() {
             this.image = assets.note; this.width = 30; this.height = 30; this.x = CANVAS_WIDTH;
             const pgy = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT; const minH = 70; const maxH = 120;
@@ -181,8 +148,7 @@ window.addEventListener('load', function() {
         }
         update() {
             if (activePowerUpType === 'magnet' && player) {
-                const dx = player.x - this.x; const dy = player.y - this.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const dx = player.x - this.x; const dy = player.y - this.y; const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist < 150) { this.x += dx * 0.05; this.y += dy * 0.05; }
             }
             this.x -= gameSpeed;
@@ -190,33 +156,29 @@ window.addEventListener('load', function() {
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
-     class PowerUp {
+
+    class PowerUp {
         constructor() {
-            const types = ['invincible', 'superjump', 'magnet'];
-            this.type = types[Math.floor(Math.random() * types.length)];
-            if (this.type === 'invincible') this.image = assets.chapeau;
-            else if (this.type === 'superjump') this.image = assets.botte;
-            else if (this.type === 'magnet') this.image = assets.aimant;
-            this.width = 100;
-            this.height = (this.image && this.image.height && this.image.width) ? (this.image.height / this.image.width) * this.width : 100;
+            const types = ['invincible', 'superjump', 'magnet']; this.type = types[Math.floor(Math.random() * types.length)];
+            if (this.type === 'invincible') this.image = assets.chapeau; else if (this.type === 'superjump') this.image = assets.botte; else this.image = assets.aimant;
+            this.width = 100; this.height = (this.image && this.image.height && this.image.width) ? (this.image.height / this.image.width) * this.width : 100;
             this.x = CANVAS_WIDTH;
             const pgy = CANVAS_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT; const minH = 70; const maxH = 120;
             this.y = pgy - (Math.random() * (maxH - minH) + minH);
-             if(this.y < 20) this.y = 20;
-             if (this.y + this.height > pgy - minH) { this.y = pgy - minH - this.height; }
+             if(this.y < 20) this.y = 20; if (this.y + this.height > pgy - minH) { this.y = pgy - minH - this.height; }
             this.baseY = this.y; this.angle = Math.random() * Math.PI * 2;
         }
         update() { this.x -= gameSpeed; this.angle += 0.05; this.y = this.baseY + Math.sin(this.angle) * 20; }
         draw() { if (this.image && this.image.complete) { ctx.drawImage(this.image, this.x, this.y, this.width, this.height); } }
         getHitbox() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
     }
-     class Particle {
+
+    class Particle {
         constructor(x, y, type) {
             this.x = x; this.y = y; this.type = type; this.size = Math.random() * 5 + 2;
             this.speedX = -Math.random() * 2 - 1; this.speedY = Math.random() * 2 - 1;
             this.gravity = 0.1; this.life = 100;
-            if (type === 'gold') { this.color = 'gold'; }
-            else { const c = ['gold', 'white', 'silver']; this.color = c[Math.floor(Math.random() * c.length)]; }
+            if (type === 'gold') { this.color = 'gold'; } else { const c = ['gold', 'white', 'silver']; this.color = c[Math.floor(Math.random() * c.length)]; }
         }
         update() { this.speedY += this.gravity; this.x += this.speedX; this.y += this.speedY; this.life--; }
         draw() {
@@ -224,10 +186,10 @@ window.addEventListener('load', function() {
             ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1.0;
         }
     }
-     class BackgroundHead {
+
+    class BackgroundHead {
         constructor() {
-            const i = Math.floor(Math.random() * 18) + 1;
-            this.image = assets[`perso${i}`]; this.scale = Math.random() * 0.3 + 0.2;
+            const i = Math.floor(Math.random() * 18) + 1; this.image = assets[`perso${i}`]; this.scale = Math.random() * 0.3 + 0.2;
             this.width = (this.image.width || 50) * this.scale; this.height = (this.image.height || 50) * this.scale;
             this.speed = BASE_GAME_SPEED * (this.scale * 0.5); this.alpha = this.scale * 1.5;
             this.x = CANVAS_WIDTH + Math.random() * CANVAS_WIDTH;
@@ -256,39 +218,28 @@ window.addEventListener('load', function() {
         }
     }
 
-
     // --- FONCTIONS DE GESTION DU JEU ---
-    function initMenu() { /* ... (inchangé) ... */ }
-    function startGame() { /* ... (inchangé) ... */ }
-    function endGame() { /* ... (inchangé) ... */ }
-     // --- (Copier initMenu, startGame, endGame de V3.1 corrigé ici) ---
-     function initMenu() {
+    function initMenu() {
         gameState = 'menu';
         menuElement.style.display = 'flex'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'none'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'none'; powerUpTimerElement.style.display = 'none';
-        if(livesContainer) livesContainer.style.display = 'none'; // Cacher vies si l'élément existe
+        if(livesContainer) livesContainer.style.display = 'none';
         if (adminButton) adminButton.style.display = 'block';
     }
-     function startGame() {
+
+    function startGame() {
         gameState = 'playing';
         menuElement.style.display = 'none'; gameOverScreenElement.style.display = 'none';
         scoreElement.style.display = 'block'; versionElement.style.display = 'block';
         powerUpTextElement.style.display = 'block'; powerUpTimerElement.style.display = 'block';
-        if(livesContainer) livesContainer.style.display = 'flex'; // Afficher vies si l'élément existe
+        if(livesContainer) livesContainer.style.display = 'flex';
         if (adminButton) adminButton.style.display = 'none';
-        score = 0;
-        lives = INITIAL_LIVES; // Réinit vies
-        gameSpeed = BASE_GAME_SPEED;
-        frameCount = 0;
+        score = 0; lives = INITIAL_LIVES; gameSpeed = BASE_GAME_SPEED; frameCount = 0;
         obstacles = []; collectibles = []; powerUps = []; particles = [];
-        obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL;
-        collectibleTimer = 200;
-        rainTimer = 30 * 60;
-        canSpawnPowerUp = false;
-        scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL;
-        resetPowerUp();
-        updateLivesDisplay(); // MAJ affichage vies
+        obstacleTimer = BASE_OBSTACLE_SPAWN_INTERVAL; collectibleTimer = 200; rainTimer = 30 * 60;
+        canSpawnPowerUp = false; scoreAtLastPowerUp = -POWERUP_SCORE_INTERVAL; resetPowerUp();
+        updateLivesDisplay();
         player = new Player();
         backgroundHeads = [];
         for(let i = 0; i < 10; i++) { backgroundHeads.push(new BackgroundHead()); }
@@ -296,33 +247,27 @@ window.addEventListener('load', function() {
         currentMusic = musicTracks[Math.floor(Math.random() * musicTracks.length)];
         currentMusic.loop = true; currentMusic.volume = 0.5;
         let playPromise = currentMusic.play();
-        if (playPromise !== undefined) {
-             playPromise.catch(error => {
-                 console.log("Lecture audio bloquée initialement.", error);
-             });
-         }
+        if (playPromise !== undefined) { playPromise.catch(e => { console.log("Audio bloqué.", e); }); }
         updateGame();
     }
-     function endGame() {
+
+    function endGame() {
         gameState = 'gameOver';
         if (currentMusic) { currentMusic.pause(); }
-        gameOverScreenElement.style.display = 'flex';
-        finalScoreElement.innerText = `${score}`;
+        gameOverScreenElement.style.display = 'flex'; finalScoreElement.innerText = `${score}`;
         gameContainer.classList.add('shake');
         setTimeout(() => gameContainer.classList.remove('shake'), 500);
         resetPowerUp();
     }
 
-
-    // --- V3.5: Fonction affichage vies simplifiée ---
+    // Fonction affichage vies V3.5 (simple)
     function updateLivesDisplay() {
         if (!livesContainer) return;
-        livesContainer.innerHTML = ''; // Toujours vider
+        livesContainer.innerHTML = '';
         if (assets.coeur && assets.coeur.complete) {
-            for (let i = 0; i < lives; i++) { // Afficher seulement les vies restantes
+            for (let i = 0; i < lives; i++) {
                 const heartImg = document.createElement('img');
-                heartImg.src = assets.coeur.src;
-                heartImg.alt = 'Vie';
+                heartImg.src = assets.coeur.src; heartImg.alt = 'Vie';
                 livesContainer.appendChild(heartImg);
             }
         }
@@ -332,88 +277,58 @@ window.addEventListener('load', function() {
     function triggerFlash() {
         if (!flashOverlay) return;
         flashOverlay.classList.add('active');
-        setTimeout(() => {
-            flashOverlay.classList.remove('active');
-        }, 150);
+        setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
     }
 
     // --- FONCTIONS DE MISE À JOUR (Handle) ---
-    function handleBackground() { /* ... (inchangé) ... */ }
-    function handleSpawners() { /* ... (inchangé) ... */ }
-     // --- (Copier handleBackground et handleSpawners de V3.1 corrigé ici) ---
-     function handleBackground() {
-        if(assets.background && assets.background.complete) {
-             ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        } else {
-             ctx.fillStyle = '#111';
-             ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        }
+    function handleBackground() {
+        if(assets.background && assets.background.complete) { ctx.drawImage(assets.background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); }
+        else { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); }
         backgroundHeads.forEach(head => { head.update(); head.draw(); });
-        ctx.fillStyle = '#666';
-        ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
+        ctx.fillStyle = '#666'; ctx.fillRect(0, CANVAS_HEIGHT - GROUND_HEIGHT, CANVAS_WIDTH, GROUND_HEIGHT);
     }
-     function handleSpawners() {
+
+    function handleSpawners() {
         obstacleTimer--;
         if (obstacleTimer <= 0) {
             obstacles.push(new Obstacle());
             if (Math.random() < 0.1) {
                 setTimeout(() => {
                     if(gameState !== 'playing') return;
-                    const pairObstacle = new Obstacle();
-                    pairObstacle.width *= 0.8; pairObstacle.height *= 0.8;
-                    pairObstacle.y = CANVAS_HEIGHT - GROUND_HEIGHT - pairObstacle.height;
-                    obstacles.push(pairObstacle);
+                    const p = new Obstacle(); p.width *= 0.8; p.height *= 0.8;
+                    p.y = CANVAS_HEIGHT - GROUND_HEIGHT - p.height; obstacles.push(p);
                 }, 300 / gameSpeed);
             }
-            const speedFactor = Math.max(1, (gameSpeed - BASE_GAME_SPEED));
-            const newInterval = BASE_OBSTACLE_SPAWN_INTERVAL - speedFactor * 5;
-            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, newInterval) + (Math.random() * 20 - 10);
+            const sf = Math.max(1, (gameSpeed - BASE_GAME_SPEED));
+            const ni = BASE_OBSTACLE_SPAWN_INTERVAL - sf * 5;
+            obstacleTimer = Math.max(MIN_OBSTACLE_SPAWN_INTERVAL, ni) + (Math.random() * 20 - 10);
         }
         collectibleTimer--;
-        if (collectibleTimer <= 0) {
-            collectibles.push(new Collectible());
-            collectibleTimer = 200 + Math.random() * 100;
-        }
+        if (collectibleTimer <= 0) { collectibles.push(new Collectible()); collectibleTimer = 200 + Math.random() * 100; }
         if (!canSpawnPowerUp && score >= 30 && score >= scoreAtLastPowerUp + POWERUP_SCORE_INTERVAL) { canSpawnPowerUp = true; }
         if (canSpawnPowerUp && !isPowerUpActive && powerUps.length === 0) {
-            if (Math.random() < 0.005) {
-                powerUps.push(new PowerUp());
-                canSpawnPowerUp = false;
-            }
+            if (Math.random() < 0.005) { powerUps.push(new PowerUp()); canSpawnPowerUp = false; }
         }
     }
 
-
-    // --- V3.5: handleEntities simplifié pour les vies ---
+    // handleEntities V3.5 (simple perte de vie)
     function handleEntities() {
         particles.forEach((p, index) => { p.update(); p.draw(); if (p.life <= 0) particles.splice(index, 1); });
-        if (player) {
-             player.update();
-             player.draw();
-        }
+        if (player) { player.update(); player.draw(); }
 
         obstacles.forEach((obstacle, index) => {
             if (!obstacle) return;
-            obstacle.update();
-            obstacle.draw();
-
+            obstacle.update(); obstacle.draw();
             if (player && checkCollision(player.getHitbox(), obstacle.getHitbox())) {
                 if (activePowerUpType !== 'invincible') {
-                    triggerFlash(); // Garder le flash
-                    lives--;
-                    updateLivesDisplay(); // Mettre à jour l'affichage simple
-                    obstacles.splice(index, 1); // Enlever l'obstacle touché
-                    if (lives <= 0) {
-                        endGame(); // Game Over
-                    }
+                    triggerFlash(); lives--; updateLivesDisplay(); // MAJ simple
+                    obstacles.splice(index, 1);
+                    if (lives <= 0) { endGame(); }
                 }
             } else if (obstacle.x + obstacle.width < (player ? player.x : 0) && !obstacle.passed) {
-                score++;
-                obstacle.passed = true;
+                score++; obstacle.passed = true;
             }
-            if (obstacle.x < -obstacle.width && (!player || !checkCollision(player.getHitbox(), obstacle.getHitbox()))) {
-                 obstacles.splice(index, 1);
-            }
+            if (obstacle.x < -obstacle.width && (!player || !checkCollision(player.getHitbox(), obstacle.getHitbox()))) { obstacles.splice(index, 1); }
         });
 
         collectibles.forEach((c, index) => {
@@ -432,12 +347,7 @@ window.addEventListener('load', function() {
         });
     }
 
-    function handleWeather() { /* ... (inchangé) ... */ }
-    function handlePowerUps() { /* ... (inchangé) ... */ }
-    function activatePowerUp(type) { /* ... (inchangé) ... */ }
-    function resetPowerUp() { /* ... (inchangé) ... */ }
-     // --- (Copier handleWeather, handlePowerUps, activatePowerUp, resetPowerUp de V3.1 corrigé ici) ---
-     function handleWeather() {
+    function handleWeather() {
         const cycle = (score % 500) / 500; const nightAlpha = Math.sin(cycle * Math.PI) * 0.7;
         ctx.fillStyle = `rgba(0, 0, 50, ${nightAlpha})`; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         rainTimer--;
@@ -455,13 +365,15 @@ window.addEventListener('load', function() {
             }
         }
     }
-     function handlePowerUps() {
+
+    function handlePowerUps() {
         if (!isPowerUpActive) return;
         powerUpTimer -= 1000 / 60;
         if (powerUpTimer <= 0) { resetPowerUp(); }
         else { powerUpTimerElement.innerText = (powerUpTimer / 1000).toFixed(1) + 's'; }
     }
-     function activatePowerUp(type) {
+
+    function activatePowerUp(type) {
         isPowerUpActive = true; activePowerUpType = type; powerUpTimer = POWERUP_DURATION_MS;
         scoreAtLastPowerUp = score; let text = '';
         if (type === 'invincible') text = 'INVINCIBLE !';
@@ -471,7 +383,8 @@ window.addEventListener('load', function() {
         setTimeout(() => { if(powerUpTextElement) powerUpTextElement.style.opacity = 0; }, 2000);
         for(let i=0; i<30; i++) { if(player) particles.push(new Particle(player.x+player.width/2, player.y+player.height/2, 'gold')); }
     }
-     function resetPowerUp() {
+
+    function resetPowerUp() {
         isPowerUpActive = false; activePowerUpType = null; powerUpTimer = 0;
         if(powerUpTextElement) powerUpTextElement.innerText = '';
         if(powerUpTimerElement) powerUpTimerElement.innerText = '';
@@ -500,7 +413,7 @@ window.addEventListener('load', function() {
         event.preventDefault();
         if (currentMusic && currentMusic.paused && gameState !== 'loading') {
              let playPromise = currentMusic.play();
-             if (playPromise !== undefined) { playPromise.catch(e => console.log("Tentative de reprise audio échouée.", e)); }
+             if (playPromise !== undefined) { playPromise.catch(e => console.log("Reprise audio échouée.", e)); }
         }
         switch (gameState) {
             case 'menu': startGame(); break;
