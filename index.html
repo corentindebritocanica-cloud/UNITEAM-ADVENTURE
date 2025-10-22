@@ -12,9 +12,8 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="score">Score: 0</div>
-        <div id="lives-container">
-            </div>
-        <div id="version">V4</div>
+        <div id="lives-container"></div>
+        <div id="version">V4.1</div>
         <div id="powerUpText"></div>
         <div id="powerUpTimer"></div>
 
@@ -27,17 +26,28 @@
             <h1>Appuyez pour commencer</h1>
             <div id="powerup-info">
                 <h3>Power-Ups:</h3>
-                <p><img src="chapeau.png" alt="Chapeau"> = Invincible</p>
-                <p><img src="botte.png" alt="Botte"> = Super Saut</p>
-                <p><img src="aimant.png" alt="Aimant"> = Aimant à notes</p>
+                 <div class="power-up-item">
+                     <img src="chapeau.png" alt="Chapeau">
+                     <p class="power-up-desc">Invincible</p>
+                </div>
+                 <div class="power-up-item">
+                     <img src="botte.png" alt="Botte">
+                     <p class="power-up-desc">Super Saut</p>
+                 </div>
+                 <div class="power-up-item">
+                     <img src="aimant.png" alt="Aimant">
+                      <p class="power-up-desc">Aimant à notes</p>
+                 </div>
             </div>
             <button id="adminButton">Admin</button>
         </div>
 
-        <div id="gameOverScreen" class="screen" style="display: none;">
+        <div id="gameOverScreen" class="screen game-over-blur" style="display: none;"> {/* Ajout classe game-over-blur */}
             <h1>Game Over</h1>
             <h2 id="finalScore">Score: 0</h2>
-            <p>Appuyez pour recommencer</p>
+            {/* Suppression du <p>Appuyez...</p> */}
+            {/* Ajout du bouton */}
+            <button id="restartButton">Recommencer</button>
         </div>
     </div>
 
